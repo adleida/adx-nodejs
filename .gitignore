@@ -1,0 +1,12 @@
+*.idea
+.idea
+idea
+.DS_Store
+*.DS_Store
+
+pids
+logs
+results
+
+node_modules
+npm-debug.log
