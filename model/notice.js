@@ -3,13 +3,13 @@
  */
 
 var REGULAR_NOTICE = new function(){
-    this.SUCCESS = {
+    this.SUCCESS = JSON.stringify({
         "success" : ''
-    };
+    });
 
-    this.FAIL = {
+    this.FAIL = JSON.stringify({
         "fail" : ""
-    }
+    });
 };
 
 exports.REGULAR_NOTICE = REGULAR_NOTICE;

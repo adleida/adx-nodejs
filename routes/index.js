@@ -18,6 +18,19 @@ router.get('/clk', function (req, res, next) {
   });
 });
 
+router.post("/clk", function(req, res){
+  if(req.body){
+    var request = req.body;
+    engine.bid(JSON.stringify(request), 1000, function(error, response){
+      if(error){
+
+      }else{
+        res.end(response);
+      }
+    });
+  }
+});
+
 router.post('/notice', function(req, res, next){
   console.log("get notice info" );
   res.end("known");

@@ -6,7 +6,9 @@ var http = require("http");
 var load_current_dsps = require("../model/DSP").load_current_dsps;
 var REGULAR_NOTICE = require("../model/notice").REGULAR_NOTICE;
 
-var dsps = load_current_dsps();
+
+//All the DSP current available.
+var CURRENT_DSPS = load_current_dsps();
 
 function compose_post_option(request, host, port, path){
     return {
@@ -33,7 +35,7 @@ function compose_post_option(request, host, port, path){
 function auction_to_dsp(request, dsps, timeout, callback){
     var responses = [];
     var stopped = false;
-    var rest_to_send = dsps.length;
+    var rest_to_send = CURRENT_DSPS.length;
 
     //POST bid request to each DSP
     dsps.forEach(function (dsp, idx) {
@@ -81,7 +83,7 @@ function auction_to_dsp(request, dsps, timeout, callback){
 }
 
 function bid(request, timeout, callback){
-    auction_to_dsp(request, dsps, timeout, function(responses){
+    auction_to_dsp(request, CURRENT_DSPS, timeout, function(responses){
         var win_idx = winner(responses);
         if(win_idx != -1){
             callback(null, responses[win_idx][1]);
@@ -91,9 +93,9 @@ function bid(request, timeout, callback){
 
         responses.forEach(function(response, idx){
             if(win_idx == idx){
-                notice_dsp(JSON.stringify(REGULAR_NOTICE.SUCCESS), dsps[response[0]]);
+                notice_dsp(REGULAR_NOTICE.SUCCESS, CURRENT_DSPS[response[0]]);
             }else{
-                notice_dsp(JSON.stringify(REGULAR_NOTICE.FAIL), dsps[response[0]]);
+                notice_dsp(REGULAR_NOTICE.FAIL, CURRENT_DSPS[response[0]]);
             }
         });
     });
