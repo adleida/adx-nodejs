@@ -11,7 +11,6 @@ router.post('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-
 router.get('/clk', function (req, res, next) {
   engine.bid("", 1000, function(error, response){
     res.end(response);
