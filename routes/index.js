@@ -20,6 +20,7 @@ router.get('/clk', function (req, res, next) {
 router.post("/clk", function(req, res){
   if(req.body){
     var request = req.body;
+    request.id = "1323";
     engine.bid(JSON.stringify(request), 1000, function(error, response){
       if(error){
 

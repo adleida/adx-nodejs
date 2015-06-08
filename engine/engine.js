@@ -17,7 +17,7 @@ function compose_post_option(request, host, port, path){
         port: port,
         path: path,
         headers: {
-            "Content-Type": "application/json",
+            //"Content-Type": "application/json",
             "Content-Length": request.length
         }
     };

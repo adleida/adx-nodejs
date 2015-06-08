@@ -17,9 +17,10 @@ var current_dsps = [];
 function load_current_dsps(){
     if(current_dsps.length == 0){
         current_dsps = [
-            new DSP("www.baidu.com", "/", 80, "", "/", 80),
-            new DSP("www.sina.com", "/", 80, "", "/", 80),
-            new DSP("localhost", "/", 3000, "localhost", "/notice", 3000)
+            new DSP("192.168.1.244", "v1/bid/123", 6060, "192.168.1.244", "/v1/notice/123", 6060)
+            //new DSP("123.57.70.242", "/v1/bid/123", 6060, "123.57.70.242", "/v1/notice/123", 6060)
+            //new DSP("localhost", "/", 3000, "localhost", "/notice", 3000),
+            //new DSP("www.sina.com", "/", 80, "", "/", 80)
         ];
     }
     return current_dsps;
