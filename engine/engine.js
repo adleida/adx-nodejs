@@ -56,6 +56,7 @@ function auction_to_dsp(request, dsps, timeout, callback){
                 if(stopped){
                     //do nothing
                 }else{
+                    console.log("get response from dsp " + dsp.bid_host);
                     responses.push([idx, response]);
                     if (--rest_to_send == 0) {
                         stopped = true;
@@ -70,12 +71,14 @@ function auction_to_dsp(request, dsps, timeout, callback){
         });
 
         req.write(request);
+        console.log("send bid request to dsp " + dsp.bid_host)
         req.end();
     });
 
     //timeout for the whole bid auction
     setTimeout(function(){
         if(!stopped){
+            console.log("timeout")
             stopped = true;
             callback(responses);
         }
@@ -92,6 +95,7 @@ function bid(request, timeout, callback){
         }
 
         responses.forEach(function(response, idx){
+            console.log("send notice to dsp " + CURRENT_DSPS[response[0]].notice_host);
             if(win_idx == idx){
                 notice_dsp(REGULAR_NOTICE.SUCCESS, CURRENT_DSPS[response[0]]);
             }else{

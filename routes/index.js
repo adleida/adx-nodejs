@@ -23,7 +23,7 @@ router.post("/clk", function(req, res){
     request.id = "1323";
     engine.bid(JSON.stringify(request), 1000, function(error, response){
       if(error){
-
+        res.end(JSON.stringify(error));
       }else{
         res.end(response);
       }
