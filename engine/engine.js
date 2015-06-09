@@ -109,6 +109,10 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
     }, timeout);
 };
 
+Engine.prototype.generateID = function(){
+    return Math.random().toString();
+};
+
 /**
  * bid on the ad request, select winner from responses and notice dsps about the result
  * then callback(error, ad result)
@@ -121,6 +125,7 @@ Engine.prototype.bid = function(request, timeout, callback){
     //generate a random id for the request
     var self = this;
     var dsps = self.dsps;
+    request.id = self.generateID();
     self.auction(request, dsps, timeout, function(responses){
         var winner = self.winner(responses);
         if(winner == -1){
@@ -129,7 +134,7 @@ Engine.prototype.bid = function(request, timeout, callback){
         }else{
             winston.log('verbose','dsp %s has won bid %s', dsps[responses[winner][0]].id, request.id);
             winston.log('debug', '%s', responses[winner][1]);
-            var result = self.ad_result(dsps[responses[winner][0]], responses[winner][1]);
+            var result = self.adResult(dsps[responses[winner][0]], responses[winner][1]);
             callback(null, result);
         }
 
@@ -155,7 +160,7 @@ Engine.prototype.notice_dsp = function(notice, dsp){
     request.end();
 };
 
-Engine.prototype.ad_result = function(dsp, response){
+Engine.prototype.adResult = function(dsp, response){
     return response;
 };
 
