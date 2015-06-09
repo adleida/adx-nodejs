@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "required": [
+    "id",
+    "adunit",
+    "device",
+    "user_id",
+    "is_test",
+    "geo",
+    "cur"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "adunit": {
+      "type": "object",
+      "required": [
+        "type",
+        "floor",
+        "param"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "floor": {
+          "type": "number"
+        },
+        "param": {
+          "type": "object",
+          "required": [
+            "count"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true
+            }
+          }
+        }
+      }
+    },
+    "device": {
+      "type": "object",
+      "required": [
+        "os",
+        "os_version",
+        "resolution_w",
+        "resolution_h",
+        "device_id",
+        "device_id_enc"
+      ],
+      "properties": {
+        "os": {
+          "type": "string"
+        },
+        "os_version": {
+          "type": "string"
+        },
+        "brand": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "resolution_w": {
+          "type": "integer"
+        },
+        "resolution_h": {
+          "type": "integer"
+        },
+        "network_id": {
+          "type": "integer",
+          "enum": [
+            0,
+            70120,
+            70121,
+            70123
+          ]
+        },
+        "device_type": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "detected_language": {
+          "type": "string"
+        },
+        "device_id": {
+          "type": "string"
+        },
+        "device_id_enc": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2
+          ]
+        }
+      }
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "is_test": {
+      "type": "integer"
+    },
+    "geo": {
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        }
+      }
+    },
+    "cur": {
+      "type": "string"
+    },
+    "deal_id": {
+      "type": "string"
+    }
+  }
+}
