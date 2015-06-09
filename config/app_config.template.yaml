@@ -8,4 +8,7 @@ engine:
         - bid_host : 1100
           bid_port : 200
           bid_path :
+    schemas:
+        request :
+        response :
 log_level: verbose

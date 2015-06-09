@@ -8,6 +8,8 @@ var load_current_dsps = require("../model/DSP").load_current_dsps;
 var REGULAR_NOTICE = require("../model/notice").REGULAR_NOTICE;
 var js = require("jsonfile");
 var validator = require("jsonschema");
+var url = require('url');
+var uuid = require('node-uuid');
 
 function compose_post_option(request, host, port, path){
     return {
@@ -35,6 +37,14 @@ Engine.prototype.ENGINE_STATE = {
     RUNNING : 1
 };
 
+/**
+ * initial the exchange according to the configuration file
+ * including:
+ * timeout
+ * dsps
+ * schema
+ * @param config
+ */
 Engine.prototype.launch = function(config){
     var self = this;
     if(self.state == self.ENGINE_STATE.STOPPED){
@@ -67,6 +77,7 @@ Engine.prototype.launch = function(config){
 
 /**
  * hold an auction for dsps, responses that returned in less than timeout are valid
+ * then callback([response])
  * @param request
  * @param dsps
  * @param timeout
@@ -102,7 +113,7 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
 
                     var validateResult = self.validate('response', JSON.parse(response));
                     if(validateResult.errors.length == 0){
-                        responses.push([idx, response]);
+                        responses.push(response);
                     }else{
                         winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
                     }
@@ -131,8 +142,12 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
     }, timeout);
 };
 
+/**
+ * generate a random id for each request
+ * @returns {string}
+ */
 Engine.prototype.generateID = function(){
-    return Math.random().toString();
+    return uuid.v4();
 };
 
 /**
@@ -154,26 +169,32 @@ Engine.prototype.bid = function(request, callback){
             winston.log('info', 'auction %s has no available bids', request.id);
             callback({"error":"no available bids"}, "no available bids");
         }else{
-            winston.log('verbose','dsp %s has won bid %s', dsps[responses[winner][0]].id, request.id);
-            winston.log('debug', 'winner response: ', responses[winner][1]);
-            var result = self.adResult(dsps[responses[winner][0]], responses[winner][1]);
+            winston.log('verbose','dsp %s has won bid %s', responses[winner].did, request.id);
+            winston.log('debug', 'winner response: ', responses[winner]);
+            var result = self.adResult(responses[winner]);
             callback(null, result);
         }
 
         //notice each dsp about the result
         responses.forEach(function(response, idx) {
-            winston.log('verbose', 'notice dsp %s', dsps[response[0]].id);
+            winston.log('verbose', 'notice dsp %s', response.did);
             if(winner == idx){
-                self.notice_dsp(REGULAR_NOTICE.SUCCESS, dsps[response[0]]);
+                self.notice_dsp(REGULAR_NOTICE.SUCCESS, response.nurl);
             }else{
-                self.notice_dsp(REGULAR_NOTICE.FAIL, dsps[response[0]]);
+                self.notice_dsp(REGULAR_NOTICE.FAIL, response.nurl);
             }
         });
     });
 };
 
-Engine.prototype.notice_dsp = function(notice, dsp){
-    var option = compose_post_option(notice, dsp.notice_host, dsp.notice_port, dsp.notice_path);
+/**
+ * notice dsp about the bid result
+ * @param notice
+ * @param nurl
+ */
+Engine.prototype.notice_dsp = function(notice, nurl){
+    var urlobj = url.parse(nurl);
+    var option = compose_post_option(notice, urlobj.hostname, urlobj.port, urlobj.path);
     var request = http.request(option);
     request.on('error', function(error){
         winston.log('info', 'fail to notice dsp %s, error %s', dsp.id, JSON.stringify(error));
@@ -182,6 +203,12 @@ Engine.prototype.notice_dsp = function(notice, dsp){
     request.end();
 };
 
+/**
+ * compose the ad result according to the winner response
+ * @param dsp
+ * @param response
+ * @returns {*}
+ */
 Engine.prototype.adResult = function(dsp, response){
     return response;
 };
