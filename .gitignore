@@ -10,3 +10,5 @@ results
 
 node_modules
 npm-debug.log
+
+app_config.yaml
