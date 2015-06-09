@@ -4,7 +4,6 @@
 
 var http = require("http");
 var winston = require('winston');
-var load_current_dsps = require("../model/DSP").load_current_dsps;
 var REGULAR_NOTICE = require("../model/notice").REGULAR_NOTICE;
 var js = require("jsonfile");
 var validator = require("jsonschema");
