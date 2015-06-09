@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var validator = require("jsonschema").validate;
-
+var winston = require('winston');
 /* GET home page. */
 router.get('/', function (req, res, next) {
     res.render('index', {title: 'Express'});
@@ -11,8 +10,16 @@ router.post("/clk", function (req, res) {
     if (req.body) {
         var request = req.body;
         var engine = req.app.get('engine');
+
+        var validateResult = engine.validate("request", request);
+        if(validateResult.errors.length > 0){
+            winston.log("verbose", "request not valide");
+            winston.log("debug", request);
+            res.end(validateResult.errors.join(" "));
+        }
+
         var config = req.app.get('config');
-        engine.bid(request, config.timeout, function (error, response) {
+        engine.bid(request, function (error, response) {
             if (error) {
                 res.end(JSON.stringify(error));
             } else {

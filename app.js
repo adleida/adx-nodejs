@@ -49,6 +49,7 @@ if (app.get('env') === 'development') {
     });
 }
 
+var rootDir = process.cwd();
 // production error handler
 // no stacktraces leaked to user
 app.use(function (err, req, res, next) {
@@ -60,14 +61,14 @@ app.use(function (err, req, res, next) {
 });
 
 try {
-    var config = yaml.safeLoad(fs.readFileSync("./config/app_config.yaml", 'utf8'));
-    winston.level = "debug";
+    var config = yaml.safeLoad(fs.readFileSync(rootDir + "/config/app_config.yaml", 'utf8'));
+    if(config.log_level) winston.level = config.log_level;
     app.set('config', config);
 } catch (e) {
     winston.log('error', "fail to load configuration, %s", e);
     process.exit(1);
 }
-var engine = new Engine();
+var engine = new Engine(rootDir);
 engine.launch(config.engine);
 app.set('engine', engine);
 

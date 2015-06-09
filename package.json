@@ -13,6 +13,7 @@
     "fs": "0.0.2",
     "jade": "~1.9.2",
     "js-yaml": "^3.3.1",
+    "jsonfile": "^2.0.1",
     "jsonschema": "^1.0.1",
     "morgan": "~1.5.3",
     "serve-favicon": "~2.2.1",

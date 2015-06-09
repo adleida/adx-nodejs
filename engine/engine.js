@@ -6,6 +6,8 @@ var http = require("http");
 var winston = require('winston');
 var load_current_dsps = require("../model/DSP").load_current_dsps;
 var REGULAR_NOTICE = require("../model/notice").REGULAR_NOTICE;
+var js = require("jsonfile");
+var validator = require("jsonschema");
 
 function compose_post_option(request, host, port, path){
     return {
@@ -20,10 +22,12 @@ function compose_post_option(request, host, port, path){
     };
 }
 
-function Engine(){
+function Engine(rootDir){
     var self = this;
     self.state = 0;
     self.dsps = [];
+    self.schemas = {};
+    self.rootDir = rootDir;
 };
 
 Engine.prototype.ENGINE_STATE = {
@@ -36,15 +40,24 @@ Engine.prototype.launch = function(config){
     if(self.state == self.ENGINE_STATE.STOPPED){
         //initial the engine
         winston.log('info', "starting ad exchange engine");
+
         self.timeout = config.timeout;
         winston.log("verbose", "timeout : %d", self.timeout);
+
         if(config.dsps){
             winston.log("verbose", "use dsps in configuration");
-            winston.log("verbose", "%j", config.dsps);
+            winston.log("debug", config.dsps);
             self.dsps = config.dsps;
         }else{
             winston.log("verbose", "load dsps from database");
             self.dsps = [];
+        }
+
+        if(config.schemas){
+            for(var rule in config.schemas){
+                winston.log('verbose', "loading schema %s for rule %s", config.schemas[rule], rule);
+                self.loadSchema(rule, self.rootDir + "/public/schemas/" + config.schemas[rule]);
+            }
         }
         self.state = self.ENGINE_STATE.RUNNING;
     }else if(self.state == self.ENGINE_STATE.RUNNING){
@@ -60,13 +73,16 @@ Engine.prototype.launch = function(config){
  * @param callback
  */
 Engine.prototype.auction = function(request, dsps, timeout, callback){
+    var self = this;
     var responses = [];
     var stopped = false;
     var rest = dsps.length;
+    var request_str = JSON.stringify(request);
+
     winston.log('info', 'start new auction %s', request.id);
     dsps.forEach(function(dsp, idx){
         var response = '';
-        var options = compose_post_option(request, dsp.bid_host, dsp.bid_port, dsp.bid_path);
+        var options = compose_post_option(request_str, dsp.bid_host, dsp.bid_port, dsp.bid_path);
 
         var req = http.request(options, function(res){
             res.on('data', function (data) {
@@ -81,9 +97,15 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
                 if(stopped){
                     winston.log('debug', 'dsp %s returned bid response, however the auction already ends', dsp.id);
                 }else{
-                    winston.log('debug', 'dsp %s returned bid response', dsp.id);
-                    winston.log('verbose', '%s', response);
-                    responses.push([idx, response]);
+                    winston.log('verbose', 'dsp %s returned bid response', dsp.id);
+                    winston.log('debug', 'response: %s', response);
+
+                    var validateResult = self.validate('response', JSON.parse(response));
+                    if(validateResult.errors.length == 0){
+                        responses.push([idx, response]);
+                    }else{
+                        winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
+                    }
                     if (--rest == 0) {
                         stopped = true;
                         callback(responses);
@@ -93,11 +115,11 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
         });
 
         winston.log('verbose', 'send bid request to dsp %s ==> %s:%s%s', dsp.id, dsp.bid_host, dsp.bid_port, dsp.bid_path);
-        winston.log('debug', '%j', request);
+        winston.log('debug', 'request: ', request);
         req.on('error', function(error){
             winston.log('info','error in sending bid request to %s', dsp.id)
         });
-        req.write(request);
+        req.write(request_str);
         req.end();
     });
     setTimeout(function(){
@@ -121,19 +143,19 @@ Engine.prototype.generateID = function(){
  * @param timeout
  * @param callback
  */
-Engine.prototype.bid = function(request, timeout, callback){
+Engine.prototype.bid = function(request, callback){
     //generate a random id for the request
     var self = this;
     var dsps = self.dsps;
     request.id = self.generateID();
-    self.auction(request, dsps, timeout, function(responses){
+    self.auction(request, dsps, self.timeout, function(responses){
         var winner = self.winner(responses);
         if(winner == -1){
             winston.log('info', 'auction %s has no available bids', request.id);
             callback({"error":"no available bids"}, "no available bids");
         }else{
             winston.log('verbose','dsp %s has won bid %s', dsps[responses[winner][0]].id, request.id);
-            winston.log('debug', '%s', responses[winner][1]);
+            winston.log('debug', 'winner response: ', responses[winner][1]);
             var result = self.adResult(dsps[responses[winner][0]], responses[winner][1]);
             callback(null, result);
         }
@@ -174,6 +196,19 @@ Engine.prototype.winner = function(responses){
     }else{
         return 0;
     }
+};
+
+/**
+ * load json schemas
+ * @param rule
+ * @param filePath
+ */
+Engine.prototype.loadSchema = function(rule, filePath){
+    this.schemas[rule] = js.readFileSync(filePath);
+};
+
+Engine.prototype.validate = function(rule, data){
+    return validator.validate(data, this.schemas[rule]);
 };
 
 exports.Engine = Engine;
