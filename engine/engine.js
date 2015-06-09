@@ -3,12 +3,9 @@
  */
 
 var http = require("http");
+var winston = require('winston');
 var load_current_dsps = require("../model/DSP").load_current_dsps;
 var REGULAR_NOTICE = require("../model/notice").REGULAR_NOTICE;
-
-
-//All the DSP current available.
-var CURRENT_DSPS = load_current_dsps();
 
 function compose_post_option(request, host, port, path){
     return {
@@ -23,27 +20,55 @@ function compose_post_option(request, host, port, path){
     };
 }
 
+function Engine(){
+    var self = this;
+    self.state = 0;
+    self.dsps = [];
+};
+
+Engine.prototype.ENGINE_STATE = {
+    STOPPED : 0,
+    RUNNING : 1
+};
+
+Engine.prototype.launch = function(config){
+    var self = this;
+    if(self.state == self.ENGINE_STATE.STOPPED){
+        //initial the engine
+        winston.log('info', "starting ad exchange engine");
+        self.timeout = config.timeout;
+        winston.log("verbose", "timeout : %d", self.timeout);
+        if(config.dsps){
+            winston.log("verbose", "use dsps in configuration");
+            winston.log("verbose", "%j", config.dsps);
+            self.dsps = config.dsps;
+        }else{
+            winston.log("verbose", "load dsps from database");
+            self.dsps = [];
+        }
+        self.state = self.ENGINE_STATE.RUNNING;
+    }else if(self.state == self.ENGINE_STATE.RUNNING){
+        winston.warn("ad exchange engine is already running");
+    }
+};
+
 /**
- * send the request to each dsp in the list
- * then call the callback with arry of [dsp_idx : response] which returned earlier than the timeout
- * current version use string to concat http messages, if there're encoding problem we need to use buffer
- * @param request   request content
- * @param dsps      list of dsp url
- * @param timeout   in ms
- * @param callback  function(responses)
+ * hold an auction for dsps, responses that returned in less than timeout are valid
+ * @param request
+ * @param dsps
+ * @param timeout
+ * @param callback
  */
-function auction_to_dsp(request, dsps, timeout, callback){
+Engine.prototype.auction = function(request, dsps, timeout, callback){
     var responses = [];
     var stopped = false;
-    var rest_to_send = CURRENT_DSPS.length;
-
-    //POST bid request to each DSP
-    dsps.forEach(function (dsp, idx) {
+    var rest = dsps.length;
+    winston.log('info', 'start new auction %s', request.id);
+    dsps.forEach(function(dsp, idx){
         var response = '';
         var options = compose_post_option(request, dsp.bid_host, dsp.bid_port, dsp.bid_path);
 
-        //concat post message, but if this auction is already done (stopped) shutdown the connection
-        var req = http.request(options, function (res) {
+        var req = http.request(options, function(res){
             res.on('data', function (data) {
                 if (stopped) {
                     res.destroy();
@@ -54,11 +79,12 @@ function auction_to_dsp(request, dsps, timeout, callback){
 
             res.on("end", function () {
                 if(stopped){
-                    //do nothing
+                    winston.log('debug', 'dsp %s returned bid response, however the auction already ends', dsp.id);
                 }else{
-                    console.log("get response from dsp " + dsp.bid_host);
+                    winston.log('debug', 'dsp %s returned bid response', dsp.id);
+                    winston.log('verbose', '%s', response);
                     responses.push([idx, response]);
-                    if (--rest_to_send == 0) {
+                    if (--rest == 0) {
                         stopped = true;
                         callback(responses);
                     }
@@ -66,61 +92,83 @@ function auction_to_dsp(request, dsps, timeout, callback){
             });
         });
 
+        winston.log('verbose', 'send bid request to dsp %s ==> %s:%s%s', dsp.id, dsp.bid_host, dsp.bid_port, dsp.bid_path);
+        winston.log('debug', '%j', request);
         req.on('error', function(error){
-            console.log(error);
+            winston.log('info','error in sending bid request to %s', dsp.id)
         });
-
         req.write(request);
-        console.log("send bid request to dsp " + dsp.bid_host)
         req.end();
     });
-
-    //timeout for the whole bid auction
     setTimeout(function(){
         if(!stopped){
-            console.log("timeout")
+            winston.log('info', 'auction %s timeout', request.id);
             stopped = true;
             callback(responses);
         }
     }, timeout);
-}
+};
 
-function bid(request, timeout, callback){
-    auction_to_dsp(request, CURRENT_DSPS, timeout, function(responses){
-        var win_idx = winner(responses);
-        if(win_idx != -1){
-            callback(null, responses[win_idx][1]);
+/**
+ * bid on the ad request, select winner from responses and notice dsps about the result
+ * then callback(error, ad result)
+ * @param request
+ * @param dsps
+ * @param timeout
+ * @param callback
+ */
+Engine.prototype.bid = function(request, timeout, callback){
+    //generate a random id for the request
+    var self = this;
+    var dsps = self.dsps;
+    self.auction(request, dsps, timeout, function(responses){
+        var winner = self.winner(responses);
+        if(winner == -1){
+            winston.log('info', 'auction %s has no available bids', request.id);
+            callback({"error":"no available bids"}, "no available bids");
         }else{
-            callback({"fail" : "fail"}, "failed to get bid result");
+            winston.log('verbose','dsp %s has won bid %s', dsps[responses[winner][0]].id, request.id);
+            winston.log('debug', '%s', responses[winner][1]);
+            var result = self.ad_result(dsps[responses[winner][0]], responses[winner][1]);
+            callback(null, result);
         }
 
-        responses.forEach(function(response, idx){
-            console.log("send notice to dsp " + CURRENT_DSPS[response[0]].notice_host);
-            if(win_idx == idx){
-                notice_dsp(REGULAR_NOTICE.SUCCESS, CURRENT_DSPS[response[0]]);
+        //notice each dsp about the result
+        responses.forEach(function(response, idx) {
+            winston.log('verbose', 'notice dsp %s', dsps[response[0]].id);
+            if(winner == idx){
+                self.notice_dsp(REGULAR_NOTICE.SUCCESS, dsps[response[0]]);
             }else{
-                notice_dsp(REGULAR_NOTICE.FAIL, CURRENT_DSPS[response[0]]);
+                self.notice_dsp(REGULAR_NOTICE.FAIL, dsps[response[0]]);
             }
         });
     });
-}
+};
 
-function notice_dsp(notice, dsp){
-    var options = compose_post_option(notice, dsp.notice_host, dsp.notice_port, dsp.notice_path);
-    var request = http.request(options);
-    request.write(notice);
+Engine.prototype.notice_dsp = function(notice, dsp){
+    var option = compose_post_option(notice, dsp.notice_host, dsp.notice_port, dsp.notice_path);
+    var request = http.request(option);
     request.on('error', function(error){
-       console.log(error);
-    });
+        winston.log('info', 'fail to notice dsp %s, error %s', dsp.id, JSON.stringify(error));
+    })
+    request.write(notice);
     request.end();
-}
+};
 
-function winner(responses){
+Engine.prototype.ad_result = function(dsp, response){
+    return response;
+};
+
+/**
+ * select the winner from these responses
+ * @param responses: array of [dsp_idx, response]
+ */
+Engine.prototype.winner = function(responses){
     if(responses.length == 0){
         return -1;
     }else{
         return 0;
     }
-}
+};
 
-exports.bid = bid;
+exports.Engine = Engine;

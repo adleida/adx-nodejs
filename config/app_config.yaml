@@ -1,0 +1,11 @@
+engine:
+    timeout: 10
+    database:
+        database: what
+        username: waht
+        password: waht
+    dsps:
+        - bid_host : 1100
+          bid_port : 200
+          bid_path :
+log_level: verbose
