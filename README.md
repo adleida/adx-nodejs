@@ -32,10 +32,14 @@ once the exchange started, it will run on port 3000. client may send bid request
 ## Configuration 配置
 The configuration file has several parts: 配置文件有几个部分组成
 ### engine
-####timeout
+####timeout 超时时长
 The max time that exchange would wait for DSP's reponse in ms.
-####dsps
+
+exchange等待DSP返回竞价结果的最大等待时间
+####dsps DSP配置
 If dsps were presented in the configuration file ,the exchange would only load these dsps
+
+如果**dsps**在配置文件中出现，exchange
 each dsp should have:
 
 * bid_host
