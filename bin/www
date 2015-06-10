@@ -9,23 +9,16 @@ var debug = require('debug')('Dangerous:server');
 var http = require('http');
 
 /**
- * Get port from environment and store in Express.
- */
-
-var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
-
-/**
  * Create HTTP server.
  */
 
 var server = http.createServer(app);
-
+var port = app.get('port');
 /**
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port);
+server.listen(app.get('port'));
 server.on('error', onError);
 server.on('listening', onListening);
 

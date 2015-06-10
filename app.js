@@ -64,6 +64,7 @@ try {
     var config = yaml.safeLoad(fs.readFileSync(rootDir + "/config/app_config.yaml", 'utf8'));
     if(config.log_level) winston.level = config.log_level;
     app.set('config', config);
+    app.set('port', config.port);
 } catch (e) {
     winston.log('error', "fail to load configuration, %s", e);
     process.exit(1);

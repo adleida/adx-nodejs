@@ -1,7 +1,8 @@
 engine:
     timeout: 100
     database:
-        database: what
+        type: mongo
+        url: s
         username: waht
         password: waht
     dsps:
@@ -13,3 +14,4 @@ engine:
         request : clk-request-schema.json
         response : bid-response-schema.json
 log_level: debug
+port: 3000
