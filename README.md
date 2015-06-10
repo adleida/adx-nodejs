@@ -38,6 +38,7 @@ each dsp should have:
 * bid_host
 * bid_port
 * bid_path
+
 ### log_level
 set the log level for the exchange system, you may use:
 
