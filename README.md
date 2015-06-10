@@ -27,7 +27,7 @@ An ad-exchange center written in nodejs
 once the exchange started, it will run on port 3000. client may send bid request to **http://ip:3000/clk**, the exchange will resend these requests to dsps you specified, select the final winner and return the result to the client and notice dsps about the result.
 
 ## Configuration
-The configuration file has sever parts.
+The configuration file has several parts:
 ### engine
 ####timeout
 The max time that exchange would wait for DSP's reponse in ms.
