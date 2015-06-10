@@ -39,18 +39,25 @@ exchange等待DSP返回竞价结果的最大等待时间
 ####dsps DSP配置
 If dsps were presented in the configuration file ,the exchange would only load these dsps
 
-如果**dsps**在配置文件中出现，exchange
+如果**dsps**在配置文件中出现，exchange将只会加载该项中指定的DSP配置。
+
 each dsp should have:
 
-* bid_host
-* bid_port
-* bid_path
+每一个DSP都至少需要包含：
 
-####shemas
+* bid_host  竞价地址host
+* bid_port  竞价地址端口
+* bid_path  竞价地址path
+
+####shemas  接口schema文件
 specified the json schema to validate the request from client and response from DSP, you should only write down the filename, exchange will try to load them under /public/schemas/
 
-### log_level
+配置对竞价发起者发出的竞价请求和DSP返回的出价结果进行校验的schema，配置中请只填写文件名称，exchange将会试图在/public/schemas文件夹中加载对应名称的文件
+
+### log_level  log等级
 set the log level for the exchange system, you may use:
+
+设置系统运行时的log等级，可用的选项如下：
 
 * debug
 * verbose
