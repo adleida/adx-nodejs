@@ -5,7 +5,7 @@
  */
 
 var app = require('../app');
-var debug = require('debug')('Dangerous:server');
+//var debug = require('debug')('Dangerous:server');
 var http = require('http');
 
 /**
@@ -20,7 +20,7 @@ var port = app.get('port');
 
 server.listen(app.get('port'));
 server.on('error', onError);
-server.on('listening', onListening);
+//server.on('listening', onListening);
 
 /**
  * Normalize a port into a number, string, or false.
