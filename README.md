@@ -57,8 +57,9 @@ set the log level for the exchange system, you may use:
 * info
 * warn
 * error
+
+### port 端口
+Exchange启动后监听端口
+
 ## Schema
 All shema files should be placed under /public/shemas.
-
-## port 端口
-Exchange启动后监听端口
