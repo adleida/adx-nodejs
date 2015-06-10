@@ -46,6 +46,9 @@ each dsp should have:
 * bid_port
 * bid_path
 
+####shemas
+specified the json schema to validate the request from client and response from DSP, you should only write down the filename, exchange will try to load them under /public/schemas/
+
 ### log_level
 set the log level for the exchange system, you may use:
 
@@ -54,9 +57,8 @@ set the log level for the exchange system, you may use:
 * info
 * warn
 * error
-
-####shemas
-specified the json schema to validate the request from client and response from DSP, you should only write down the filename, exchange will try to load them under /public/schemas/
-
 ## Schema
 All shema files should be placed under /public/shemas.
+
+## port 端口
+Exchange启动后监听端口
