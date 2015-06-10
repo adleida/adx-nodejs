@@ -52,4 +52,4 @@ set the log level for the exchange system, you may use:
 specified the json schema to validate the request from client and response from DSP, you should only write down the filename, exchange will try to load them under /public/schemas/
 
 ## Schema
-All shema file should be placed under /public/shemas.
+All shema files should be placed under /public/shemas.
