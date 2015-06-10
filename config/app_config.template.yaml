@@ -1,14 +1,15 @@
 engine:
-    timeout: 10
+    timeout: 100
     database:
         database: what
         username: waht
         password: waht
     dsps:
-        - bid_host : 1100
-          bid_port : 200
-          bid_path :
+        - bid_host : 123.57.70.242
+          bid_port : 6060
+          bid_path : /v1/bid/556e876ac44b1a7dfaee5ec2
+          id : 1038123
     schemas:
-        request :
-        response :
-log_level: verbose
+        request : clk-request-schema.json
+        response : bid-response-schema.json
+log_level: debug

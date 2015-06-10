@@ -17,7 +17,7 @@ function compose_post_option(request, host, port, path){
         port: port,
         path: path,
         headers: {
-            //"Content-Type": "application/json",
+            "Content-Type": "application/json",
             "Content-Length": request.length
         }
     };
@@ -87,12 +87,12 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
     var responses = [];
     var stopped = false;
     var rest = dsps.length;
-    var request_str = JSON.stringify(request);
+    var request_buffer = new Buffer(JSON.stringify(request), "utf-8");
 
     winston.log('info', 'start new auction %s', request.id);
     dsps.forEach(function(dsp, idx){
         var response = '';
-        var options = compose_post_option(request_str, dsp.bid_host, dsp.bid_port, dsp.bid_path);
+        var options = compose_post_option(request_buffer, dsp.bid_host, dsp.bid_port, dsp.bid_path);
 
         var req = http.request(options, function(res){
             res.on('data', function (data) {
@@ -110,9 +110,10 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
                     winston.log('verbose', 'dsp %s returned bid response', dsp.id);
                     winston.log('debug', 'response: %s', response);
 
-                    var validateResult = self.validate('response', JSON.parse(response));
+                    var responseJson = JSON.parse(response);
+                    var validateResult = self.validate('response', responseJson);
                     if(validateResult.errors.length == 0){
-                        responses.push(response);
+                        responses.push(responseJson);
                     }else{
                         winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
                     }
@@ -129,7 +130,7 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
         req.on('error', function(error){
             winston.log('info','error in sending bid request to %s', dsp.id)
         });
-        req.write(request_str);
+        req.write(request_buffer);
         req.end();
     });
     setTimeout(function(){
@@ -196,7 +197,7 @@ Engine.prototype.notice_dsp = function(notice, nurl){
     var option = compose_post_option(notice, urlobj.hostname, urlobj.port, urlobj.path);
     var request = http.request(option);
     request.on('error', function(error){
-        winston.log('info', 'fail to notice dsp %s, error %s', dsp.id, JSON.stringify(error));
+        winston.log('info', 'fail to notice url %s, error %s', nurl, JSON.stringify(error));
     })
     request.write(notice);
     request.end();
@@ -208,8 +209,8 @@ Engine.prototype.notice_dsp = function(notice, nurl){
  * @param response
  * @returns {*}
  */
-Engine.prototype.adResult = function(dsp, response){
-    return response;
+Engine.prototype.adResult = function(response){
+    return new Buffer(JSON.stringify(response), "utf-8");
 };
 
 /**
