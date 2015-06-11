@@ -79,8 +79,8 @@ Filter are used to filter DSP that a request will be sent, all filters should be
 * write the following code to import filterBase class
 
 
-    var util = require("util");
-    var FilterBase = require("./filterBase");
+        var util = require("util");
+        var FilterBase = require("./filterBase");
     
 * write your own filter class, and make it inherits FilterBase
 
