@@ -15,3 +15,4 @@ engine:
         response : bid-response-schema.json
 log_level: debug
 port: 3000
+protocol_version: 0.14

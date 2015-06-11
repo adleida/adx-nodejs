@@ -3,7 +3,12 @@
  */
 
 var RESPONSE = new function(){
-    this.UNRECOGNIZED_REQUEST = {};
+    var self = this;
+    self.UNRECOGNIZED_REQUEST = {};
+    self.PROTOCOL_VERSION_NOT_SUPPORTED = {
+        error : 'protocol version not supported'
+    };
+    self.PROTOCOL_VERSION_NOT_SUPPORTED_STR = JSON.stringify(self.PROTOCOL_VERSION_NOT_SUPPORTED)
 };
 
 exports.RESPONSE = RESPONSE;
