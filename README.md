@@ -72,8 +72,10 @@ Exchange启动后监听端口
 All shema files should be placed under /public/shemas.
 Schema configuration use key-value pair, current keys are:
 
-* request     the json file used to validate the request from client
-* reponse     the json file used to validate the response of DSP
+* request                
+`the json file used to validate the request from client`
+* reponse                
+`the json file used to validate the response of DSP`
 
 ## Filter 过滤
 Filter are used to filter DSP that a request will be sent, all filters should be placed under **/engine/filters**. Filter用来过滤一个竞价请求会涉及到的DSP，所有的filter都应该放在目录 **/engine/filters** 下面。
