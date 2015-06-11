@@ -6,6 +6,7 @@ An ad exchange center written in nodejs.
 * download the code 下载源码
  
         git clone https://github.com/adleida/adx-nodejs.git
+        cd adx-nodejs
 
 * install packages 安装依赖库
 
