@@ -72,48 +72,44 @@ Exchange启动后监听端口
 All shema files should be placed under /public/shemas.
 
 ## Filter 过滤
-Filter are used to filter DSP that a request will be sent, all filters should be placed under **/engine/filters**. 
-
-Filter用来过滤一个竞价请求会涉及到的DSP，所有的filter都应该放在目录 **/engine/filters** 下面。
+Filter are used to filter DSP that a request will be sent, all filters should be placed under **/engine/filters**. Filter用来过滤一个竞价请求会涉及到的DSP，所有的filter都应该放在目录 **/engine/filters** 下面。
 ### How to write a filter  如何写一个Filter
 
-* create a **%filtername%.js** file under **/engine/filters**     在 **/engine/filters** 目下新建一个 **%filtername%.js** 文件
-* write the following code to import **filterBase** class    首先引入 **filterBase** 类
+* create a **%filtername%.js** file under **/engine/filters** 
+* write the following code to import filterBase class
 
 
-    var util = require("util");
-    var FilterBase = require("./filterBase");
+        var util = require("util");
+        var FilterBase = require("./filterBase");
     
-* write your own filter class, and make it inherits FilterBase    创建新filter class, 然后继承FilterBase
+* write your own filter class, and make it inherits FilterBase
 
 
-    function TestFilter(){
-        this.name = "testFilter";
-    }    
-    util.inherits(TestFilter, FilterBase);
-    //remember to name your own filter
+        function TestFilter(){
+            this.name = "testFilter";
+        }    
+        util.inherits(TestFilter, FilterBase);
+        //remember to name your own filter
     
-* write your own filter function code    编写filter function
+* write your own filter function code
 
 
-    //return a message describe your filter, which would be displayed in the log when loading the filter
-    TestFilter.prototype.loadMessage = function(){
-        return "test filter";
-    };
+        TestFilter.prototype.loadMessage = function(){
+            //return a message describe your filter, which would be displayed in the log when loading the filter
+            return "filter base, actually do nothing"
+        };
+        
+        TestFilter.prototype.onLoad = function(){
+            //onLoad() would be called when the engine load this filter
+        };
+        
+        TestFilter.prototype.filter = function(request, dsps, engine){
+            //core function of filter, this should return a list of dsps, and this function will be called on each bid request that the engine received
+            return dsps;
+        };
     
-    //onLoad() would be called when the engine load this filter
-    TestFilter.prototype.onLoad = function(){
-        console.log("this is a test Filter!");
-    };
-    
-    //core function of filter, this should return a list of dsps, and this function will be called on each bid request that the engine received
-    TestFilter.prototype.filter = function(request, dsps, engine){
-        return dsps;
-    };
-    
-* remember to export your filter class    记得导出你写的filter类
+* remember to export your filter class
 
 
-    module.exports = TestFilter;
+        module.exports = TestFilter;
     
-* the filter will be automatically loaded when the engine starts    egnine启动时，该filter将会被自动加载
