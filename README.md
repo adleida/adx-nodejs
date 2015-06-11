@@ -112,4 +112,6 @@ Filter are used to filter DSP that a request will be sent, all filters should be
 
 
         module.exports = TestFilter;
+        
+* the filter will be loaded automatically when the engine starts
     
