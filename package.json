@@ -2,6 +2,11 @@
   "name": "Dangerous",
   "version": "0.0.0",
   "private": true,
+  "description" : "an ad exchange",
+  "keywords" : [
+    "ad", "exchange"
+  ],
+  "repository" : "https://github.com/adleida/adx-nodejs",
   "scripts": {
     "start": "node ./bin/www"
   },
