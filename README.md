@@ -85,32 +85,31 @@ Filter are used to filter DSP that a request will be sent, all filters should be
 * write your own filter class, and make it inherits FilterBase
 
 
-    function TestFilter(){
-        this.name = "testFilter";
-    }    
-    util.inherits(TestFilter, FilterBase);
-    //remember to name your own filter
+        function TestFilter(){
+            this.name = "testFilter";
+        }    
+        util.inherits(TestFilter, FilterBase);
+        //remember to name your own filter
     
 * write your own filter function code
 
 
-    //return a message describe your filter, which would be displayed in the log when loading the filter
-    TestFilter.prototype.loadMessage = function(){
-        return "filter base, actually do nothing"
-    };
-    
-    //onLoad() would be called when the engine load this filter
-    TestFilter.prototype.onLoad = function(){
-    
-    };
-    
-    //core function of filter, this should return a list of dsps, and this function will be called on each bid request that the engine received
-    TestFilter.prototype.filter = function(request, dsps, engine){
-        return dsps;
-    };
+        TestFilter.prototype.loadMessage = function(){
+            //return a message describe your filter, which would be displayed in the log when loading the filter
+            return "filter base, actually do nothing"
+        };
+        
+        TestFilter.prototype.onLoad = function(){
+            //onLoad() would be called when the engine load this filter
+        };
+        
+        TestFilter.prototype.filter = function(request, dsps, engine){
+            //core function of filter, this should return a list of dsps, and this function will be called on each bid request that the engine received
+            return dsps;
+        };
     
 * remember to export your filter class
 
 
-    module.exports = TestFilter;
+        module.exports = TestFilter;
     
