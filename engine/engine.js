@@ -9,6 +9,7 @@ var js = require("jsonfile");
 var validator = require("jsonschema");
 var url = require('url');
 var uuid = require('node-uuid');
+var fs = require("fs");
 
 function compose_post_option(request, host, port, path){
     return {
@@ -29,6 +30,7 @@ function Engine(rootDir){
     self.dsps = [];
     self.schemas = {};
     self.rootDir = rootDir;
+    self.filters = [];
 };
 
 Engine.prototype.ENGINE_STATE = {
@@ -68,6 +70,8 @@ Engine.prototype.launch = function(config){
                 self.loadSchema(rule, self.rootDir + "/public/schemas/" + config.schemas[rule]);
             }
         }
+
+        self.loadFilters();
         self.state = self.ENGINE_STATE.RUNNING;
     }else if(self.state == self.ENGINE_STATE.RUNNING){
         winston.warn("ad exchange engine is already running");
@@ -187,6 +191,16 @@ Engine.prototype.bid = function(request, callback){
     });
 };
 
+Engine.prototype.filterDSP = function(request, dsps){
+    var self = this;
+    for(var i in self.filters){
+        winston.log("debug", "filter using " + self.filters[i].name);
+        dsps = self.filters[i].filter(request, dsps, self);
+        winston.log("debug", "dsps left " + dsps);
+    }
+    return dsps;
+}
+
 /**
  * notice dsp about the bid result
  * @param notice
@@ -236,6 +250,28 @@ Engine.prototype.loadSchema = function(rule, filePath){
 
 Engine.prototype.validate = function(rule, data){
     return validator.validate(data, this.schemas[rule]);
+};
+
+Engine.prototype.loadFilters = function(){
+    winston.log("info", "load filters");
+    var self = this;
+    var filterDir = self.rootDir + "/engine/filters";
+    var filters = fs.readdirSync(filterDir).filter(function(filename){
+        return filename.substr(-3) == ".js";
+    });
+    filters.forEach(function(filter){
+        try{
+            winston.log("info", "load filter " + filter);
+            var filterCls = require(filterDir + "/" + filter);
+            var filterObj = new filterCls();
+            if(typeof(filterObj.filter) != "function"){ throw new Error(filterObj + " doesn't have filter()")};
+            winston.log("verbose", filterObj.loadMessage());
+            filterObj.onLoad();
+            self.filters.push(filterObj);
+        }catch(error){
+            winston.log("error", "fail to load filter " + filter, error);
+        }
+    });
 };
 
 exports.Engine = Engine;
