@@ -212,7 +212,7 @@ Engine.prototype.notice_dsp = function(notice, response){
         winston.log('info', 'fail to notice url %s, error %s', nurl, JSON.stringify(error));
     });
     notice.id = response.id;
-    request.write(notice);
+    request.write(JSON.notify(notice));
     request.end();
 };
 
