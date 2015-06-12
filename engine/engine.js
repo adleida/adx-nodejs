@@ -180,11 +180,11 @@ Engine.prototype.bid = function(request, callback){
         //notice each dsp about the result
         winner.forEach(function(response) {
             winston.log('verbose', 'notice dsp %s', response.did);
-            self.notice_dsp(REGULAR_NOTICE.SUCCESS, response.nurl);
+            self.notice_dsp(REGULAR_NOTICE.SUCCESS, response);
         });
         loser.forEach(function(response){
             winston.log("verbose", "notice dsp %s", response.did);
-            self.notice_dsp(REGULAR_NOTICE.FAIL, response.nurl);
+            self.notice_dsp(REGULAR_NOTICE.FAIL, response);
         });
     });
 };
@@ -204,13 +204,14 @@ Engine.prototype.filterDSP = function(request, dsps){
  * @param notice
  * @param nurl
  */
-Engine.prototype.notice_dsp = function(notice, nurl){
-    var urlobj = url.parse(nurl);
+Engine.prototype.notice_dsp = function(notice, response){
+    var urlobj = url.parse(response.nurl);
     var option = compose_post_option(notice, urlobj.hostname, urlobj.port, urlobj.path);
     var request = http.request(option);
     request.on('error', function(error){
         winston.log('info', 'fail to notice url %s, error %s', nurl, JSON.stringify(error));
-    })
+    });
+    notice.id = response.id;
     request.write(notice);
     request.end();
 };
