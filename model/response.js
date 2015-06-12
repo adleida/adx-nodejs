@@ -8,7 +8,7 @@ var RESPONSE = new function(){
     self.PROTOCOL_VERSION_NOT_SUPPORTED = {
         error : 'protocol version not supported'
     };
-    self.PROTOCOL_VERSION_NOT_SUPPORTED_STR = JSON.stringify(self.PROTOCOL_VERSION_NOT_SUPPORTED)
+    self.PROTOCOL_VERSION_NOT_SUPPORTED_STR = JSON.stringify(self.PROTOCOL_VERSION_NOT_SUPPORTED);
 };
 
 exports.RESPONSE = RESPONSE;

@@ -30,7 +30,7 @@ router.post("/clk", function (req, res) {
             if (error) {
                 res.end(JSON.stringify(error));
             } else {
-                res.end(response);
+                res.end(JSON.stringify(response));
             }
         });
     } else {

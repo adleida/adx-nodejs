@@ -13,6 +13,8 @@ engine:
     schemas:
         request : clk-request-schema.json
         response : bid-response-schema.json
+    auction:
+        1 : adlistAuctioneer
 log_level: debug
 port: 3000
 protocol_version: 0.14

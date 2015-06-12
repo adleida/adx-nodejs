@@ -31,6 +31,7 @@ function Engine(rootDir){
     self.schemas = {};
     self.rootDir = rootDir;
     self.filters = [];
+    self.auctioneers = {};
 };
 
 Engine.prototype.ENGINE_STATE = {
@@ -72,6 +73,7 @@ Engine.prototype.launch = function(config){
         }
 
         self.loadFilters();
+        self.loadAuctioneers(config.auction);
         self.state = self.ENGINE_STATE.RUNNING;
     }else if(self.state == self.ENGINE_STATE.RUNNING){
         winston.warn("ad exchange engine is already running");
@@ -167,26 +169,22 @@ Engine.prototype.bid = function(request, callback){
     var self = this;
     var dsps = self.dsps;
     request.id = self.generateID();
+    var auctionType = request.adunit.type;
+    var auctioneer = self.auctioneers[auctionType];
     self.auction(request, dsps, self.timeout, function(responses){
-        var winner = self.winner(responses);
-        if(winner == -1){
-            winston.log('info', 'auction %s has no available bids', request.id);
-            callback({"error":"no available bids"}, "no available bids");
-        }else{
-            winston.log('verbose','dsp %s has won bid %s', responses[winner].did, request.id);
-            winston.log('debug', 'winner response: ', responses[winner]);
-            var result = self.adResult(responses[winner]);
-            callback(null, result);
-        }
-
+        var result = auctioneer.handle(request, responses, self);
+        var adms = result[0];
+        var winner = result[1];
+        var loser = result[2];
+        callback(null, self.composeBidResponse(request, result));
         //notice each dsp about the result
-        responses.forEach(function(response, idx) {
+        winner.forEach(function(response) {
             winston.log('verbose', 'notice dsp %s', response.did);
-            if(winner == idx){
-                self.notice_dsp(REGULAR_NOTICE.SUCCESS, response.nurl);
-            }else{
-                self.notice_dsp(REGULAR_NOTICE.FAIL, response.nurl);
-            }
+            self.notice_dsp(REGULAR_NOTICE.SUCCESS, response.nurl);
+        });
+        loser.forEach(function(response){
+            winston.log("verbose", "notice dsp %s", response.did);
+            self.notice_dsp(REGULAR_NOTICE.FAIL, response.nurl);
         });
     });
 };
@@ -272,6 +270,33 @@ Engine.prototype.loadFilters = function(){
             winston.log("error", "fail to load filter " + filter, error);
         }
     });
+};
+
+Engine.prototype.loadAuctioneers = function(auction){
+    var self = this;
+    for(var type in auction){
+        self.loadAuctioneer(type, auction[type]);
+    }
+};
+
+Engine.prototype.loadAuctioneer = function(type, auctioneer){
+    var self = this;
+    var file = self.rootDir + "/engine/auctioneers/" + auctioneer;
+    try{
+        winston.log("info", "for auction type " + type + " load auctioneer " + auctioneer);
+        var auctionCls = require(file);
+        var auctionObj = new auctionCls();
+        self.auctioneers[type] = auctionObj;
+    }catch(error){
+        winston.log("error", "fail to load auctioneer " + auctioneer, error);
+    }
+};
+
+Engine.prototype.composeBidResponse = function(request, adms){
+    var response = {};
+    response.adm = adms;
+    response.is_test = request.is_test;
+    return response;
 };
 
 exports.Engine = Engine;
