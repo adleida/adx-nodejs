@@ -3,7 +3,6 @@
  */
 
 function AuctioneerBase(){
-
 };
 
 /**
@@ -19,6 +18,10 @@ AuctioneerBase.prototype.onLoad = function(){
 
 AuctioneerBase.prototype.loadMessage = function(){
 
+};
+
+AuctioneerBase.prototype.supportedVersion = function(){
+    return [];
 };
 
 /**

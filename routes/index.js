@@ -8,15 +8,17 @@ router.get('/', function (req, res, next) {
 });
 
 router.post("/clk", function (req, res) {
+    var engine = req.app.get('engine');
+
     //protocol version check
-    var protocol_version = req.app.get("protocol_version");
+    var protocol_version = engine.protocol_version;
     if((! req.headers.protocol_version) || (req.headers.protocol_version != protocol_version)){
         res.end(RESPONSE.PROTOCOL_VERSION_NOT_SUPPORTED_STR);
     }
 
     if (req.body) {
         var request = req.body;
-        var engine = req.app.get('engine');
+
 
         var validateResult = engine.validate("request", request);
         if(validateResult.errors.length > 0){

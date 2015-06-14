@@ -24,6 +24,10 @@ FilterBase.prototype.onLoad = function(){
 
 };
 
+FilterBase.prototype.supportedVersion = function(){
+    return [];
+};
+
 /**
  * core function of filter
  * this function should return filtered dsp array

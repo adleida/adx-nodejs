@@ -53,6 +53,7 @@ Engine.prototype.launch = function(config){
         //initial the engine
         winston.log('info', "starting ad exchange engine");
 
+        self.protocol_version = config.protocol_version;
         self.timeout = config.timeout;
         winston.log("verbose", "timeout : %d", self.timeout);
 
@@ -171,6 +172,10 @@ Engine.prototype.bid = function(request, callback){
     request.id = self.generateID();
     var auctionType = request.adunit.type;
     var auctioneer = self.auctioneers[auctionType];
+    if(!auctioneer){
+        winston.log("error", "engine doesn't have auctioneer for ad type " + auctionType);
+        callback(new Error(), null);
+    }
     self.auction(request, dsps, self.timeout, function(responses){
         var result = auctioneer.handle(request, responses, self);
         var adms = result[0];
@@ -265,6 +270,9 @@ Engine.prototype.loadFilters = function(){
             var filterObj = new filterCls();
             if(typeof(filterObj.filter) != "function"){ throw new Error(filterObj + " doesn't have filter()")};
             winston.log("verbose", filterObj.loadMessage());
+            if(!(self.protocol_version in filterObj.supportedVersion())){
+                throw new Error(filterObj + " doesn't support protocol version " + self.protocol_version);
+            }
             filterObj.onLoad();
             self.filters.push(filterObj);
         }catch(error){
@@ -287,6 +295,9 @@ Engine.prototype.loadAuctioneer = function(type, auctioneer){
         winston.log("info", "for auction type " + type + " load auctioneer " + auctioneer);
         var auctionCls = require(file);
         var auctionObj = new auctionCls();
+        if(!(self.protocol_version in auctionObj.supportedVersion())){
+            throw new Error(auctionObj + " doesn't support protocol version " + self.protocol_version);
+        }
         self.auctioneers[type] = auctionObj;
     }catch(error){
         winston.log("error", "fail to load auctioneer " + auctioneer, error);

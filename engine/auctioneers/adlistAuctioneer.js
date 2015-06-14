@@ -42,4 +42,8 @@ AdlistAuctioneer.prototype.handle = function(request, responses, engine){
     return [final, winner, loser];
 };
 
+AdlistAuctioneer.prototype.supportedVersion = function(){
+    return ["0.13"];
+};
+
 module.exports = AdlistAuctioneer;

@@ -78,5 +78,4 @@ try {
 var engine = new Engine(rootDir);
 engine.launch(config.engine);
 app.set('engine', engine);
-app.set('protocol_version', config.protocol_version);
 module.exports = app;
