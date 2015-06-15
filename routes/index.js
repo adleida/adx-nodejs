@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 var winston = require('winston');
 var RESPONSE = require("../model/response").RESPONSE;
+var url = require("url");
+
 /* GET home page. */
 router.get('/', function (req, res, next) {
     res.render('index', {title: 'Express'});
@@ -39,6 +41,28 @@ router.post("/clk", function (req, res) {
     } else {
         res.end("empty request");
     }
+});
+
+router.post("/config", function(req, res){
+    var engine = req.app.get('engine');
+    winston.log("info", "reconfigure engine");
+    if(req.body){
+        winston.log("verbose", "configure engine dsp list");
+        var requestData = req.body;
+        if(requestData.dsps){
+            engine.dsps = [];
+            requestData.dsps.forEach(function(requestDsp){
+                var burlObj = url.parse(requestDsp.burl);
+                engine.dsps.push({
+                    bid_host: burlObj.hostname,
+                    bid_port : burlObj.port,
+                    bid_path : burlObj.path
+                });
+            });
+        }
+        winston.log("verbose", "engine dsp list now are ", engine.dsps);
+    }
+    res.end();
 });
 
 module.exports = router;
