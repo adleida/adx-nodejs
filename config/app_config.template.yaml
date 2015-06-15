@@ -15,6 +15,6 @@ engine:
         response : bid-response-schema.json
     auction:
         1 : adlistAuctioneer
-    protocol_version: 0.14
+    protocol: 0.14
 log_level: debug
 port: 3000

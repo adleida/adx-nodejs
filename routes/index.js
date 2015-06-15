@@ -13,8 +13,8 @@ router.post("/clk", function (req, res) {
     var engine = req.app.get('engine');
 
     //protocol version check
-    var protocol_version = engine.protocol_version;
-    if((! req.headers.protocol_version) || (req.headers.protocol_version != protocol_version)){
+    var protocol = engine.protocol;
+    if((! req.headers.protocol) || (req.headers.protocol != protocol)){
         res.end(RESPONSE.PROTOCOL_VERSION_NOT_SUPPORTED_STR);
         return;
     }
