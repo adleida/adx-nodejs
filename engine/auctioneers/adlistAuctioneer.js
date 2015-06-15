@@ -43,7 +43,7 @@ AdlistAuctioneer.prototype.handle = function(request, responses, engine){
 };
 
 AdlistAuctioneer.prototype.supportedVersion = function(){
-    return ["0.13"];
+    return [0.14];
 };
 
 module.exports = AdlistAuctioneer;

@@ -264,14 +264,17 @@ Engine.prototype.loadFilters = function(){
         return filename.substr(-3) == ".js";
     });
     filters.forEach(function(filter){
+        if(filter == "filterBase.js"){
+            return;
+        }
         try{
             winston.log("info", "load filter " + filter);
             var filterCls = require(filterDir + "/" + filter);
             var filterObj = new filterCls();
             if(typeof(filterObj.filter) != "function"){ throw new Error(filterObj + " doesn't have filter()")};
             winston.log("verbose", filterObj.loadMessage());
-            if(!(self.protocol_version in filterObj.supportedVersion())){
-                throw new Error(filterObj + " doesn't support protocol version " + self.protocol_version);
+            if(filterObj.supportedVersion().indexOf(self.protocol_version) == -1){
+                throw new Error(filter + " doesn't support protocol version " + self.protocol_version);
             }
             filterObj.onLoad();
             self.filters.push(filterObj);
@@ -295,8 +298,8 @@ Engine.prototype.loadAuctioneer = function(type, auctioneer){
         winston.log("info", "for auction type " + type + " load auctioneer " + auctioneer);
         var auctionCls = require(file);
         var auctionObj = new auctionCls();
-        if(!(self.protocol_version in auctionObj.supportedVersion())){
-            throw new Error(auctionObj + " doesn't support protocol version " + self.protocol_version);
+        if(auctionObj.supportedVersion().indexOf(self.protocol_version) == -1){
+            throw new Error(auctioneer + " doesn't support protocol version " + self.protocol_version);
         }
         self.auctioneers[type] = auctionObj;
     }catch(error){
