@@ -43,7 +43,7 @@ router.post("/clk", function (req, res) {
     }
 });
 
-router.post("/config", function(req, res){
+router.post("/reload", function(req, res){
     var engine = req.app.get('engine');
     winston.log("info", "reconfigure engine");
     if(req.body){
