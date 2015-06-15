@@ -211,7 +211,8 @@ Engine.prototype.filterDSP = function(request, dsps){
  */
 Engine.prototype.notice_dsp = function(notice, response){
     var urlobj = url.parse(response.nurl);
-    var option = compose_post_option(notice, urlobj.hostname, urlobj.port, urlobj.path);
+    var notice_str = JSON.stringify(notice);
+    var option = compose_post_option(notice_str, urlobj.hostname, urlobj.port, urlobj.path);
     var request = http.request(option);
     request.on('error', function(error){
         winston.log('info', 'fail to notice url %s, error %s', nurl, JSON.stringify(error));
