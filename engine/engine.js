@@ -215,7 +215,7 @@ Engine.prototype.notice_dsp = function(notice, response){
     var option = compose_post_option(notice_str, urlobj.hostname, urlobj.port, urlobj.path);
     var request = http.request(option);
     request.on('error', function(error){
-        winston.log('info', 'fail to notice url %s, error %s', nurl, JSON.stringify(error));
+        winston.log('info', 'fail to notice url %s, error %s', response.nurl, JSON.stringify(error));
     });
     notice.id = response.id;
     request.write(notice_str);
