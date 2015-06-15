@@ -118,13 +118,19 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
                     winston.log('verbose', 'dsp %s returned bid response', dsp.id);
                     winston.log('debug', 'response: %s', response);
 
-                    var responseJson = JSON.parse(response);
-                    var validateResult = self.validate('response', responseJson);
-                    if(validateResult.errors.length == 0){
-                        responses.push(responseJson);
-                    }else{
-                        winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
+                    try{
+                        var responseJson = JSON.parse(response);
+                        var validateResult = self.validate('response', responseJson);
+                        if(validateResult.errors.length == 0){
+                            responses.push(responseJson);
+                        }else{
+                            winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
+                        }
+                    }catch(error){
+                        winston.log('info', "dsp %s returned invalid response", dsp.id);
+                        winston.log("debug", error);
                     }
+
                     if (--rest == 0) {
                         stopped = true;
                         callback(responses);
