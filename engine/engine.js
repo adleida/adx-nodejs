@@ -308,6 +308,7 @@ Engine.prototype.loadAuctioneer = function(type, auctioneer){
 };
 
 Engine.prototype.composeBidResponse = function(request, adms){
+    var self = this;
     var response = {};
     response.adm = self.transferCreativesToShows(adms);
     response.is_test = request.is_test;
