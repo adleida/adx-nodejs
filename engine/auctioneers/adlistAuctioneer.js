@@ -33,8 +33,8 @@ AdlistAuctioneer.prototype.handle = function(request, responses, engine){
         if(typeof(responses[adm.belongTo].win) == 'undefined'){
             winner.push(responses[adm.belongTo]);
             responses[adm.belongTo].win = true;
-            delete adm.belongTo;
         }
+        delete adm.belongTo;
     });
     var loser = responses.filter(function(response){
         return typeof(response.win) == "undefined";

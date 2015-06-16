@@ -188,7 +188,7 @@ Engine.prototype.bid = function(request, callback){
         var adms = result[0];
         var winner = result[1];
         var loser = result[2];
-        callback(null, self.composeBidResponse(request, result));
+        callback(null, self.composeBidResponse(request, adms));
         //notice each dsp about the result
         winner.forEach(function(response) {
             winston.log('verbose', 'notice dsp %s', response.did);
@@ -326,6 +326,7 @@ Engine.prototype.composeBidResponse = function(request, adms){
 Engine.prototype.transferCreativesToShows = function(adms){
     adms.forEach(function(adm){
         adm.m_id = adm.id;
+        delete adm.price;
     });
     return adms;
 };
