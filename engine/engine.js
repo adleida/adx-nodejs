@@ -325,7 +325,8 @@ Engine.prototype.composeBidResponse = function(request, adms){
 
 Engine.prototype.transferCreativesToShows = function(adms){
     adms.forEach(function(adm){
-        adm.m_id = adm.id;
+        //adm.m_id = adm.id;
+        adm.data = {};
         delete adm.price;
     });
     return adms;
