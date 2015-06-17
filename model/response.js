@@ -14,4 +14,12 @@ var RESPONSE = new function(){
     self.PROTOCOL_VERSION_NOT_SUPPORTED_STR = JSON.stringify(self.PROTOCOL_VERSION_NOT_SUPPORTED);
 };
 
+RESPONSE.ERROR_RESPONSE = function(error){
+    return {
+        "adm" :[],
+        "error" : error
+    };
+};
+
 exports.RESPONSE = RESPONSE;
+

@@ -21,13 +21,13 @@ router.post("/clk", function (req, res) {
 
     if (req.body) {
         var request = req.body;
-
-
         var validateResult = engine.validate("request", request);
         if (validateResult.errors.length > 0) {
             winston.log("verbose", "request not valide");
             winston.log("debug", request);
-            res.end(validateResult.errors.join(" "));
+            var response_str = JSON.stringify(RESPONSE.ERROR_RESPONSE({"code" : 1}));
+            winston.log("debug", "return response " + response_str);
+            res.end(response_str);
         } else {
             var config = req.app.get('config');
             engine.bid(request, function (error, response) {
