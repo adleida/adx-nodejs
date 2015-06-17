@@ -182,23 +182,24 @@ Engine.prototype.bid = function(request, callback){
     if(!auctioneer){
         winston.log("error", "engine doesn't have auctioneer for ad type " + auctionType);
         callback(new Error(), null);
+    }else{
+        self.auction(request, dsps, self.timeout, function(responses){
+            var result = auctioneer.handle(request, responses, self);
+            var adms = result[0];
+            var winner = result[1];
+            var loser = result[2];
+            callback(null, self.composeBidResponse(request, adms));
+            //notice each dsp about the result
+            winner.forEach(function(response) {
+                winston.log('verbose', 'notice dsp %s', response.did);
+                self.notice_dsp(REGULAR_NOTICE.SUCCESS, response);
+            });
+            loser.forEach(function(response){
+                winston.log("verbose", "notice dsp %s", response.did);
+                self.notice_dsp(REGULAR_NOTICE.FAIL, response);
+            });
+        });
     }
-    self.auction(request, dsps, self.timeout, function(responses){
-        var result = auctioneer.handle(request, responses, self);
-        var adms = result[0];
-        var winner = result[1];
-        var loser = result[2];
-        callback(null, self.composeBidResponse(request, adms));
-        //notice each dsp about the result
-        winner.forEach(function(response) {
-            winston.log('verbose', 'notice dsp %s', response.did);
-            self.notice_dsp(REGULAR_NOTICE.SUCCESS, response);
-        });
-        loser.forEach(function(response){
-            winston.log("verbose", "notice dsp %s", response.did);
-            self.notice_dsp(REGULAR_NOTICE.FAIL, response);
-        });
-    });
 };
 
 Engine.prototype.filterDSP = function(request, dsps){
