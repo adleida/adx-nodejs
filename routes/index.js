@@ -56,7 +56,8 @@ router.post("/reload", function(req, res){
                 engine.dsps.push({
                     bid_host: burlObj.hostname,
                     bid_port : burlObj.port,
-                    bid_path : burlObj.path
+                    bid_path : burlObj.path,
+                    id : requestDsp.id
                 });
             });
         }

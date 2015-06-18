@@ -122,7 +122,16 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
                         var responseJson = JSON.parse(response);
                         var validateResult = self.validate('response', responseJson);
                         if(validateResult.errors.length == 0){
-                            responses.push(responseJson);
+
+                            //validate did
+                            if(dsp.id){
+                                if(responseJson.did == dsp.id){
+                                    responses.push(responseJson);
+                                }
+                            }else{
+                                responses.push(responseJson);
+                            }
+
                         }else{
                             winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
                         }
