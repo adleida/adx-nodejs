@@ -14,10 +14,6 @@ router.post("/clk", function (req, res) {
     var engine = req.app.get('engine');
 
     /* mongodb logger*/
-    var oplog = req.app.get('config').mongolog;
-    winston.loggers.add('mongo',{
-        MongoDB : oplog
-    });
     var mongologger = winston.loggers.get('mongo');
     var msg = {};
     msg.date = new Date();

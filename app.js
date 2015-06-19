@@ -77,5 +77,12 @@ try {
 }
 var engine = new Engine(rootDir);
 engine.launch(config.engine);
+
+/*mongo log*/
+var oplog = app.get('config').mongolog;
+winston.loggers.add('mongo',{
+    MongoDB : oplog
+});
+
 app.set('engine', engine);
 module.exports = app;
