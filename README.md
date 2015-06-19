@@ -70,6 +70,15 @@ set the log level for the exchange system, you may use:
 ### port 端口
 Exchange启动后监听端口
 
+### mongolog mongo日志
+
+将request 和response 写入mongo中
+
+mongolog的配置至少要包括:
+- db: MongoDB 的database url; ex: `mongodb://127.0.0.1:27017/test`
+- collection: 集合名称; ex: `adx`
+- level: 日志等级; 默认为info, 高于默认值的级别可以写入, 低于默认级别的会被丢弃;
+
 ## Schema
 All shema files should be placed under /public/shemas.
 Schema configuration use key-value pair, current keys are:
