@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var winston = require('winston');
+var tmp = require('winston-mongodb').MongoDB;
 var RESPONSE = require("../model/response").RESPONSE;
 var url = require("url");
 
@@ -12,6 +13,11 @@ router.get('/', function (req, res, next) {
 router.post("/clk", function (req, res) {
     var engine = req.app.get('engine');
 
+    /* mongodb logger*/
+    var mongologger = winston.loggers.get('mongo');
+    var msg = {};
+    msg.date = new Date();
+
     //protocol version check
     var protocol = engine.protocol;
     if((! req.headers.protocol) || (req.headers.protocol != protocol)){
@@ -21,19 +27,26 @@ router.post("/clk", function (req, res) {
 
     if (req.body) {
         var request = req.body;
+        msg.request = request;
         var validateResult = engine.validate("request", request);
         if (validateResult.errors.length > 0) {
             winston.log("verbose", "request not valide");
             winston.log("debug", request);
             var response_str = JSON.stringify(RESPONSE.ERROR_RESPONSE({"code" : 1}));
+            msg.response = RESPONSE.ERROR_RESPONSE({"code" : 1});
+            mongologger.info(msg);
             winston.log("debug", "return response " + response_str);
             res.end(response_str);
         } else {
             var config = req.app.get('config');
             engine.bid(request, function (error, response) {
                 if (error) {
+                    msg.response = error;
+                    mongologger.info(msg);
                     res.end(JSON.stringify(error));
                 } else {
+                    msg.response = response;
+                    mongologger.info(msg);
                     res.end(JSON.stringify(response));
                 }
             });

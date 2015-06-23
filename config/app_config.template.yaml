@@ -16,5 +16,12 @@ engine:
     auction:
         1 : adlistAuctioneer
     protocol: 0.14
+
 log_level: debug
+
 port: 3000
+
+mongolog:
+  level: info
+  db: mongodb://127.0.0.1:27017/test
+  collection: adx
