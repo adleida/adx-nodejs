@@ -23,7 +23,7 @@ app.set('view engine', 'jade');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 //app.use(cookieParser());
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(function(req, res, next){
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -77,6 +77,12 @@ try {
 }
 var engine = new Engine(rootDir);
 engine.launch(config.engine);
+
+/*mongo log*/
+var oplog = app.get('config').mongolog;
+winston.loggers.add('mongo',{
+    MongoDB : oplog
+});
+
 app.set('engine', engine);
-app.set('protocol_version', config.protocol_version);
 module.exports = app;

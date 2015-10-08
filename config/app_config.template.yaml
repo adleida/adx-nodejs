@@ -13,6 +13,15 @@ engine:
     schemas:
         request : clk-request-schema.json
         response : bid-response-schema.json
+    auction:
+        1 : adlistAuctioneer
+    protocol: 0.14
+
 log_level: debug
+
 port: 3000
-protocol_version: 0.14
+
+mongolog:
+  level: info
+  db: mongodb://127.0.0.1:27017/test
+  collection: adx

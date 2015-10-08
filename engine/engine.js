@@ -31,12 +31,14 @@ function Engine(rootDir){
     self.schemas = {};
     self.rootDir = rootDir;
     self.filters = [];
+    self.auctioneers = {};
 };
 
 Engine.prototype.ENGINE_STATE = {
     STOPPED : 0,
     RUNNING : 1
 };
+
 
 /**
  * initial the exchange according to the configuration file
@@ -52,6 +54,7 @@ Engine.prototype.launch = function(config){
         //initial the engine
         winston.log('info', "starting ad exchange engine");
 
+        self.protocol = config.protocol;
         self.timeout = config.timeout;
         winston.log("verbose", "timeout : %d", self.timeout);
 
@@ -72,6 +75,7 @@ Engine.prototype.launch = function(config){
         }
 
         self.loadFilters();
+        self.loadAuctioneers(config.auction);
         self.state = self.ENGINE_STATE.RUNNING;
     }else if(self.state == self.ENGINE_STATE.RUNNING){
         winston.warn("ad exchange engine is already running");
@@ -114,13 +118,28 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
                     winston.log('verbose', 'dsp %s returned bid response', dsp.id);
                     winston.log('debug', 'response: %s', response);
 
-                    var responseJson = JSON.parse(response);
-                    var validateResult = self.validate('response', responseJson);
-                    if(validateResult.errors.length == 0){
-                        responses.push(responseJson);
-                    }else{
-                        winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
+                    try{
+                        var responseJson = JSON.parse(response);
+                        var validateResult = self.validate('response', responseJson);
+                        if(validateResult.errors.length == 0){
+
+                            //validate did
+                            if(dsp.id){
+                                if(responseJson.did == dsp.id){
+                                    responses.push(responseJson);
+                                }
+                            }else{
+                                responses.push(responseJson);
+                            }
+
+                        }else{
+                            winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
+                        }
+                    }catch(error){
+                        winston.log('info', "dsp %s returned invalid response", dsp.id);
+                        winston.log("debug", error);
                     }
+
                     if (--rest == 0) {
                         stopped = true;
                         callback(responses);
@@ -167,28 +186,29 @@ Engine.prototype.bid = function(request, callback){
     var self = this;
     var dsps = self.dsps;
     request.id = self.generateID();
-    self.auction(request, dsps, self.timeout, function(responses){
-        var winner = self.winner(responses);
-        if(winner == -1){
-            winston.log('info', 'auction %s has no available bids', request.id);
-            callback({"error":"no available bids"}, "no available bids");
-        }else{
-            winston.log('verbose','dsp %s has won bid %s', responses[winner].did, request.id);
-            winston.log('debug', 'winner response: ', responses[winner]);
-            var result = self.adResult(responses[winner]);
-            callback(null, result);
-        }
-
-        //notice each dsp about the result
-        responses.forEach(function(response, idx) {
-            winston.log('verbose', 'notice dsp %s', response.did);
-            if(winner == idx){
-                self.notice_dsp(REGULAR_NOTICE.SUCCESS, response.nurl);
-            }else{
-                self.notice_dsp(REGULAR_NOTICE.FAIL, response.nurl);
-            }
+    var auctionType = request.adunit.type;
+    var auctioneer = self.auctioneers[auctionType];
+    if(!auctioneer){
+        winston.log("error", "engine doesn't have auctioneer for ad type " + auctionType);
+        callback(new Error(), null);
+    }else{
+        self.auction(request, dsps, self.timeout, function(responses){
+            var result = auctioneer.handle(request, responses, self);
+            var adms = result[0];
+            var winner = result[1];
+            var loser = result[2];
+            callback(null, self.composeBidResponse(request, adms));
+            //notice each dsp about the result
+            winner.forEach(function(response) {
+                winston.log('verbose', 'notice dsp %s', response.did);
+                self.notice_dsp(REGULAR_NOTICE.SUCCESS, response);
+            });
+            loser.forEach(function(response){
+                winston.log("verbose", "notice dsp %s", response.did);
+                self.notice_dsp(REGULAR_NOTICE.FAIL, response);
+            });
         });
-    });
+    }
 };
 
 Engine.prototype.filterDSP = function(request, dsps){
@@ -206,14 +226,16 @@ Engine.prototype.filterDSP = function(request, dsps){
  * @param notice
  * @param nurl
  */
-Engine.prototype.notice_dsp = function(notice, nurl){
-    var urlobj = url.parse(nurl);
-    var option = compose_post_option(notice, urlobj.hostname, urlobj.port, urlobj.path);
+Engine.prototype.notice_dsp = function(notice, response){
+    var urlobj = url.parse(response.nurl);
+    var notice_str = JSON.stringify(notice);
+    var option = compose_post_option(notice_str, urlobj.hostname, urlobj.port, urlobj.path);
     var request = http.request(option);
     request.on('error', function(error){
-        winston.log('info', 'fail to notice url %s, error %s', nurl, JSON.stringify(error));
-    })
-    request.write(notice);
+        winston.log('info', 'fail to notice url %s, error %s', response.nurl, JSON.stringify(error));
+    });
+    notice.id = response.id;
+    request.write(notice_str);
     request.end();
 };
 
@@ -260,18 +282,64 @@ Engine.prototype.loadFilters = function(){
         return filename.substr(-3) == ".js";
     });
     filters.forEach(function(filter){
+        if(filter == "filterBase.js"){
+            return;
+        }
         try{
             winston.log("info", "load filter " + filter);
             var filterCls = require(filterDir + "/" + filter);
             var filterObj = new filterCls();
             if(typeof(filterObj.filter) != "function"){ throw new Error(filterObj + " doesn't have filter()")};
             winston.log("verbose", filterObj.loadMessage());
+            if(filterObj.supportedVersion().indexOf(self.protocol) == -1){
+                throw new Error(filter + " doesn't support protocol version " + self.protocol_version);
+            }
             filterObj.onLoad();
             self.filters.push(filterObj);
         }catch(error){
             winston.log("error", "fail to load filter " + filter, error);
         }
     });
+};
+
+Engine.prototype.loadAuctioneers = function(auction){
+    var self = this;
+    for(var type in auction){
+        self.loadAuctioneer(type, auction[type]);
+    }
+};
+
+Engine.prototype.loadAuctioneer = function(type, auctioneer){
+    var self = this;
+    var file = self.rootDir + "/engine/auctioneers/" + auctioneer;
+    try{
+        winston.log("info", "for auction type " + type + " load auctioneer " + auctioneer);
+        var auctionCls = require(file);
+        var auctionObj = new auctionCls();
+        if(auctionObj.supportedVersion().indexOf(self.protocol) == -1){
+            throw new Error(auctioneer + " doesn't support protocol version " + self.protocol_version);
+        }
+        self.auctioneers[type] = auctionObj;
+    }catch(error){
+        winston.log("error", "fail to load auctioneer " + auctioneer, error);
+    }
+};
+
+Engine.prototype.composeBidResponse = function(request, adms){
+    var self = this;
+    var response = {};
+    response.adm = self.transferCreativesToShows(adms);
+    response.is_test = request.is_test;
+    return response;
+};
+
+Engine.prototype.transferCreativesToShows = function(adms){
+    adms.forEach(function(adm){
+        adm.m_id = adm.id;
+        //adm.data = {};
+        delete adm.price;
+    });
+    return adms;
 };
 
 exports.Engine = Engine;
