@@ -2,11 +2,11 @@ var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
 //var logger = require('morgan');
-var cookieParser = require('cookie-parser');
+//var cookieParser = require('cookie-parser');         /* disable cookieParser since we don't need it right now */
 var bodyParser = require('body-parser');
 var yaml = require('js-yaml');
 var routes = require('./routes/index');
-var users = require('./routes/users');
+//var users = require('./routes/users');
 var Engine = require('./engine/engine').Engine;
 var winston = require('winston');
 var fs = require('fs');
@@ -25,6 +25,9 @@ app.use(bodyParser.urlencoded({extended: false}));
 //app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+/**
+ * allow js to send ajax bid request
+ */
 app.use(function(req, res, next){
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -56,6 +59,7 @@ if (app.get('env') === 'development') {
 }
 
 var rootDir = process.cwd();
+
 // production error handler
 // no stacktraces leaked to user
 app.use(function (err, req, res, next) {
@@ -75,8 +79,16 @@ try {
     winston.log('error', "fail to load configuration, %s", e);
     process.exit(1);
 }
-var engine = new Engine(rootDir);
-engine.launch(config.engine);
+
+try{
+    var engine = new Engine(rootDir);
+    engine.launch(app.get('config').engine);
+}catch (e){
+    winston.log('error', "fail to start bid engine, %s", e);
+    process.exit(1);
+}
+
+
 
 /*mongo log*/
 var oplog = app.get('config').mongolog;

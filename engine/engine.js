@@ -11,22 +11,10 @@ var url = require('url');
 var uuid = require('node-uuid');
 var fs = require("fs");
 
-function compose_post_option(request, host, port, path){
-    return {
-        method : "POST",
-        hostname: host,
-        port: port,
-        path: path,
-        headers: {
-            "Content-Type": "application/json",
-            "Content-Length": request.length
-        }
-    };
-}
 
 function Engine(rootDir){
     var self = this;
-    self.state = 0;
+    self.state = self.ENGINE_STATE.STOPPED;
     self.dsps = [];
     self.schemas = {};
     self.rootDir = rootDir;
@@ -52,8 +40,8 @@ Engine.prototype.launch = function(config){
     var self = this;
     if(self.state == self.ENGINE_STATE.STOPPED){
         //initial the engine
-        winston.log('info', "starting ad exchange engine");
-
+        winston.log('info', "starting ad exchange engine...");
+        
         self.protocol = config.protocol;
         self.timeout = config.timeout;
         winston.log("verbose", "timeout : %d", self.timeout);
@@ -78,16 +66,80 @@ Engine.prototype.launch = function(config){
         self.loadAuctioneers(config.auction);
         self.state = self.ENGINE_STATE.RUNNING;
     }else if(self.state == self.ENGINE_STATE.RUNNING){
-        winston.warn("ad exchange engine is already running");
+        winston.error("ad exchange engine is already running");
+        throw new Error("ad exchange engine already launched");
     }
 };
 
 /**
- * hold an auction for dsps, responses that returned in less than timeout are valid
- * then callback([response])
- * @param request
- * @param dsps
- * @param timeout
+ * send bid request to dsp, if dsp returned full response before timeout, callback would be called to handle response, otherwise the connection would be aborted.
+ * @param request_buffer
+ * @param host
+ * @param port
+ * @param path
+ * @param callback
+ */
+Engine.prototype.sendBid = function(request_buffer, host, port, path, timeout, callback){
+    var options = {
+        method : "POST",
+        hostname: host,
+        port: port,
+        path: path,
+        headers: {
+            "Content-Type": "application/json",
+            "Content-Length": request_buffer.length
+        }
+    };
+
+    var response = '';
+
+    var req = http.request(options, function(res){
+        res.on('data', function(data){
+            //we do not check weathter stopped
+            response += data;
+        });
+
+        res.on('end', function(){
+            callback(response);
+        })
+    });
+
+    winston.log('verbose', "send bid request to dsp %s [%s:%s%s]", dsp.id, dsp.bid_host, dsp.bid_port, dsp.bid_path);
+    winston.log('debug', 'request content :\n %s', request_buffer);
+
+    req.on('error', function(error){
+       winston.log('error', "fail to send bid request to dsp %s [%s:%s%s], error %s", dsp.id, dsp.bid_host, dsp.bid_port, dsp.bid_path, error);
+    });
+
+    req.write(request_buffer);
+    req.end(function(){
+        setTimeout(timeout, function(){
+            req.abort();
+        });
+    });
+};
+
+/**
+ * validate the bid response use the response schema and return the parsed response in json format
+ * or throw an error indicating the format error
+ * @param response
+ */
+Engine.prototype.validateResponse = function(response){
+    var responseJson = JSON.parse(response);
+    var validateResult = self.validate('response', responseJson);
+    if(validateResult.errors.length == 0){
+        return responseJson;
+    }else{
+        throw new Error(validateResult.errors.join(";"));
+    }
+};
+
+/**
+ * send bid request to all the dsps registered, and expecting the bid response
+ * then callback(response)
+ * @param request, json object
+ * @param dsps, array of dsps, each should contain the bid address, port
+ * @param timeout, the bid response of the dsp should return before timeout
  * @param callback
  */
 Engine.prototype.auction = function(request, dsps, timeout, callback){
@@ -97,72 +149,20 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
     var rest = dsps.length;
     var request_buffer = new Buffer(JSON.stringify(request), "utf-8");
 
-    winston.log('info', 'start new auction %s', request.id);
+    winston.log('info', 'start new auction, bid request id is  %s...', request.id);
     dsps.forEach(function(dsp, idx){
-        var response = '';
-        var options = compose_post_option(request_buffer, dsp.bid_host, dsp.bid_port, dsp.bid_path);
-
-        var req = http.request(options, function(res){
-            res.on('data', function (data) {
-                if (stopped) {
-                    res.destroy();
-                } else {
-                    response += data;
-                }
-            });
-
-            res.on("end", function () {
-                if(stopped){
-                    winston.log('debug', 'dsp %s returned bid response, however the auction already ends', dsp.id);
-                }else{
-                    winston.log('verbose', 'dsp %s returned bid response', dsp.id);
-                    winston.log('debug', 'response: %s', response);
-
-                    try{
-                        var responseJson = JSON.parse(response);
-                        var validateResult = self.validate('response', responseJson);
-                        if(validateResult.errors.length == 0){
-
-                            //validate did
-                            if(dsp.id){
-                                if(responseJson.did == dsp.id){
-                                    responses.push(responseJson);
-                                }
-                            }else{
-                                responses.push(responseJson);
-                            }
-
-                        }else{
-                            winston.log('info', "dsp %s returned invalid response", dsp.id, validateResult.errors.join(" "));
-                        }
-                    }catch(error){
-                        winston.log('info', "dsp %s returned invalid response", dsp.id);
-                        winston.log("debug", error);
-                    }
-
-                    if (--rest == 0) {
-                        stopped = true;
-                        callback(responses);
-                    }
-                }
-            });
+        self.sendBid(request_buffer, dsp.bid_host, dsp.bid_port, dsp.bid_path, timeout, function(response){
+            try{
+                responses.push(self.validateResponse(response));
+            }catch(error){
+                winston.log('error', "dsp %s return invalid response", dsp.id);
+            }
         });
-
-        winston.log('verbose', 'send bid request to dsp %s ==> %s:%s%s', dsp.id, dsp.bid_host, dsp.bid_port, dsp.bid_path);
-        winston.log('debug', 'request: ', request);
-        req.on('error', function(error){
-            winston.log('info','error in sending bid request to %s', dsp.id)
-        });
-        req.write(request_buffer);
-        req.end();
     });
+
     setTimeout(function(){
-        if(!stopped){
-            winston.log('info', 'auction %s timeout', request.id);
-            stopped = true;
-            callback(responses);
-        }
-    }, timeout);
+        callback(responses);
+    }, timeout + 1000);
 };
 
 /**
