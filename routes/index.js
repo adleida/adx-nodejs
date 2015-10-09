@@ -4,15 +4,14 @@ var winston = require('winston');
 var RESPONSE = require("../model/response").RESPONSE;
 var url = require("url");
 
-/* GET home page. */
-router.get('/', function (req, res, next) {
-    res.render('index', {title: 'Express'});
-});
-
+/**
+ * bid interface.
+ * the js in client html will send bid request to this interface for adm.
+ */
 router.post("/clk", function (req, res) {
     var engine = req.app.get('engine');
 
-    /* mongodb logger*/
+    //TO-DO: add comment to describe what will be logged in mongo in detail [yongtao]
     var mongologger = winston.loggers.get('mongo');
     var msg = {};
     msg.date = new Date();
