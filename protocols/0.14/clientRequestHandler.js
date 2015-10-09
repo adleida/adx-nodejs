@@ -15,8 +15,8 @@ function ClientRequestHandler(){
  * @param requestJson
  * @param app
  */
-ClientRequestHandler.prototype.handleClientRequest = function(requestJson, app){
+ClientRequestHandler.prototype.handle = function(requestJson, engine){
     return requestJson;
 };
 
-exports.ClientRequestHandler = ClientRequestHandler;
+module.exports = ClientRequestHandler;
