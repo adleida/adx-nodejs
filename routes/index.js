@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
 var winston = require('winston');
-var tmp = require('winston-mongodb').MongoDB;
 var RESPONSE = require("../model/response").RESPONSE;
 var url = require("url");
 
