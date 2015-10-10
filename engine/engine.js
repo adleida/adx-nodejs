@@ -137,11 +137,10 @@ Engine.prototype.sendBid = function(request_buffer, host, port, path, timeout, c
     });
 
     req.write(request_buffer);
-    req.end(function(){
-        setTimeout(function(){
-            req.abort();
-        }, timeout);
-    });
+    req.end();
+    setTimeout(function(){
+        req.abort();
+    }, timeout);
 };
 
 /**
@@ -161,9 +160,9 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
     dsps.forEach(function(dsp){
         self.sendBid(request_buffer, dsp.bid_host, dsp.bid_port, dsp.bid_path, timeout, function(response){
             try{
-                responses.push(self.validateJSON(self.protocol.schemas['DspBidResponse'], response));
+                responses.push(self.validateJSON(self.protocol.schemas['dspBidResponseSchema'], JSON.parse(response)));
             }catch(error){
-                winston.log('debuf', "message validation failed, error: " + error);
+                winston.log('debug', "message validation failed, error: " + error);
                 winston.log('error', "dsp %s return invalid response", dsp.id);
             }
         });
@@ -221,9 +220,9 @@ Engine.prototype.filterDsps = function(requestJSON, dsps){
  * array[1] is the json message
  * @param array
  */
-Engine.prototype.notice_dsp = function(array){
-    var urlobj = url.parse(array[0]);
-    var notice_buffer = new Buffer(JSON.stringify(array[1]), "utf-8");
+Engine.prototype.notice_dsp = function(param){
+    var urlobj = url.parse(param[0]);
+    var notice_buffer = new Buffer(JSON.stringify(param[1]), "utf-8");
     var option = {
         method : "POST",
         hostname: urlobj.hostname,
@@ -237,7 +236,7 @@ Engine.prototype.notice_dsp = function(array){
 
     var request = http.request(option);
     request.on('error', function(error){
-        winston.log('info', 'fail to notice url %s, error %s', array[0], JSON.stringify(error));
+        winston.log('info', 'fail to notice url %s, error %s', param[0], JSON.stringify(error));
     });
     request.write(notice_buffer);
     request.end();
