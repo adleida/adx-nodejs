@@ -1,11 +1,16 @@
 engine:
     timeout: 100
+    database:
+        type: mongo
+        url: s
+        username: waht
+        password: waht
     dsps:
         - bid_host : 123.57.70.242
           bid_port : 6060
           bid_path : /v1/bid/556e876ac44b1a7dfaee5ec2
-          id : 1038123
-    protocol: 0.14
+          id : "1038123"
+    protocol: "0.14"
 log_level: debug
 port: 3000
 mongolog:
