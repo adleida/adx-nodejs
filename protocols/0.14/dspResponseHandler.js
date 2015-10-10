@@ -18,19 +18,17 @@ Response.prototype.errorResponseJSON = function(request, error, engine){
 };
 
 Response.prototype.handleWinResponse = function(request, response, engine){
-    return
-    [
+    return [
         response.nurl,
         {
             'id' : request.id,
-            "handleWinResponse" : ''
+            "winx" : ''
         }
     ];
 };
 
 Response.prototype.handleFailResponse = function(request, response, engine){
-    return
-    [
+    return [
         response.nurl,
         {
             'id' : request.id,
