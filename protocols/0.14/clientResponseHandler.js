@@ -15,6 +15,10 @@ ClientResponseHandler.prototype.handle = function(request, result){
     return response;
 };
 
+ClientResponseHandler.prototype.handleInvalidBidRequest = function(request, error, engine){
+
+};
+
 ClientResponseHandler.prototype.transferCreativesToShows = function(adms){
     adms.forEach(function(adm){
         adm.m_id = adm.id;

@@ -6,6 +6,9 @@
  *
  * @constructor
  */
+
+var uuid = require('node-uuid');
+
 function ClientRequestHandler(){
 
 };
@@ -16,6 +19,7 @@ function ClientRequestHandler(){
  * @param app
  */
 ClientRequestHandler.prototype.handle = function(requestJson, engine){
+    requestJson.id = uuid.v4();
     return requestJson;
 };
 

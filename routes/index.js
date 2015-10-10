@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
 var winston = require('winston');
-var RESPONSE = require("../model/response").RESPONSE;
 var url = require("url");
 
 /**
@@ -9,6 +8,19 @@ var url = require("url");
  * the js in client html will send bid request to this interface for adm.
  */
 router.post("/clk", function (req, res) {
+    var engine = req.app.get("engine");
+    //TO-DO: check engine state
+    if(req.body){
+        engine.bid(req.body, function(error, response){
+            if(error){
+                winston.log("error", "");
+                res.end(JSON.stringify(response));
+            }else{
+                res.end(JSON.stringify(response));
+            }
+        });
+    }
+    /*
     var engine = req.app.get('engine');
 
     //TO-DO: add comment to describe what will be logged in mongo in detail [yongtao]
@@ -52,6 +64,7 @@ router.post("/clk", function (req, res) {
     }else{
         res.end("empty request");
     }
+    */
 });
 
 router.post("/reload", function(req, res){

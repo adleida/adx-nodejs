@@ -18,18 +18,18 @@ Response.prototype.errorResponseJSON = function(request, error, engine){
     };
 };
 
-Response.prototype.win = function(request, response, engine){
+Response.prototype.handleWinResponse = function(request, response, engine){
     return
     [
         response.nurl,
         {
             'id' : request.id,
-            'win' : ''
+            "handleWinResponse" : ''
         }
     ];
 };
 
-Response.prototype.fail = function(request, response, engine){
+Response.prototype.handleFailResponse = function(request, response, engine){
     return
     [
         response.nurl,

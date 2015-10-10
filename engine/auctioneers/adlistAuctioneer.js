@@ -30,14 +30,14 @@ AdlistAuctioneer.prototype.handle = function(request, responses, engine){
     }).slice(0, max);
     var winner = new Array();
     final.forEach(function (adm){
-        if(typeof(responses[adm.belongTo].win) == 'undefined'){
+        if(typeof(responses[adm.belongTo].handleWinResponse) == 'undefined'){
             winner.push(responses[adm.belongTo]);
-            responses[adm.belongTo].win = true;
+            responses[adm.belongTo].handleWinResponse = true;
         }
         delete adm.belongTo;
     });
     var loser = responses.filter(function(response){
-        return typeof(response.win) == "undefined";
+        return typeof(response.handleWinResponse) == "undefined";
     });
     return [final, winner, loser];
 };

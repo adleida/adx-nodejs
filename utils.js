@@ -20,4 +20,19 @@ utils.validateRawString = function(string, schema){
     return self.validateJSON(json, schema);
 };
 
+/**
+ * load and initial an object from specified path, and check the function exists in this object
+ * @param filePath
+ * @param checkFuncs
+ * @constructor
+ */
+utils.loadAndCheck = function(filePath, checkFuncs){
+    var loadCls = require(filePath);
+    var loadObj = new loadCls();
+    checkFuncs.forEach(function(checkFunc){
+        if(typeof(loadObj[checkFunc]) != "function"){ throw new Error(loadObj + " doesn't have " + checkFunc + "()")};
+    });
+    return loadObj;
+};
+
 module.exports = utils;

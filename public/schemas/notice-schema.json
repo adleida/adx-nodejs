@@ -9,7 +9,7 @@
         "id": {
           "type": "string"
         },
-        "win": {
+        "handleWinResponse": {
           "type": "object"
         }
       }
