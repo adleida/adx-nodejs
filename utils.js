@@ -5,7 +5,7 @@
 var jsonschema = require("jsonschema");
 var utils = {};
 
-utils.validateJSON = function(json, schema){
+utils.validateJSON = function(schema, json){
     var result = jsonschema.validate(json, schema);
     if(result.errors.length == 0){
         return json;
@@ -14,9 +14,9 @@ utils.validateJSON = function(json, schema){
     }
 };
 
-utils.validateRawString = function(string, schema){
+utils.validateRawString = function(schema, message){
     var self = this;
-    var json = JSON.parse(string);
+    var json = JSON.parse(message);
     return self.validateJSON(json, schema);
 };
 

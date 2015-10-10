@@ -73,7 +73,7 @@ app.use(function (err, req, res) {
 try {
     var config = yaml.safeLoad(fs.readFileSync(rootDir + "/config/app_config.yaml", 'utf8'));
     var configSchema = js.readFileSync(path.join(rootDir, "config", "config_schema.json"), "utf8");
-    app.set('config', utils.validateJSON(config, configSchema));
+    app.set('config', utils.validateJSON(configSchema, config));
     app.set('port', config.port);
     winston.level = config.log_level;
 } catch (e) {

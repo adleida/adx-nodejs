@@ -79,8 +79,8 @@ Engine.prototype.loadSchemas = function(protocolDir){
     return schemas;
 };
 
-Engine.prototype.validateMessage = function(schema, rawMessage){
-    return utils.validateRawString(schema, rawMessage);
+Engine.prototype.validateJSON = function(schema, json){
+    return utils.validateJSON(schema, json);
 };
 
 Engine.prototype.loadFilters = function(protocolDir){
@@ -130,10 +130,10 @@ Engine.prototype.sendBid = function(request_buffer, host, port, path, timeout, c
     });
 
     winston.log('verbose', "send bid request to dsp [%s:%s%s]", host, port, path);
-    winston.log('debug', 'request content :\n %s', request_buffer);
+    winston.log('debug', 'request content :\n %s', request_buffer.toString());
 
     req.on('error', function(error){
-       winston.log('error', "fail to send bid request to dsp [%s:%s%s], error %s", host, port, path, error);
+       winston.log('error', "fail to send bid request to dsp [%s:%s%s]", host, port, path);
     });
 
     req.write(request_buffer);
@@ -161,7 +161,7 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
     dsps.forEach(function(dsp){
         self.sendBid(request_buffer, dsp.bid_host, dsp.bid_port, dsp.bid_path, timeout, function(response){
             try{
-                responses.push(self.validateMessage(self.protocol.schemas['DspBidResponse'], response));
+                responses.push(self.validateJSON(self.protocol.schemas['DspBidResponse'], response));
             }catch(error){
                 winston.log('error', "dsp %s return invalid response", dsp.id);
             }
@@ -183,20 +183,21 @@ Engine.prototype.bid = function(request, callback){
     var self = this;
     var requestJson = null;
     try{
-        requestJson = self.validateMessage(self.protocol.schemas['clientRequestSchema'], request);
+        requestJson = self.validateJSON(self.protocol.schemas['clientRequestSchema'], request);
     }catch(error){
         callback(error, self.protocol.clientResponseHandler.handleInvalidBidRequest(request, error, self));
+        return;
     }
-    var wrappedRequest = self.clientRequestHandler.handle(requestJson, self);
+    var wrappedRequest = self.protocol.clientRequestHandler.handle(requestJson, self);
 
     //copy the dsps so the filter could remove unnecessary dsps
     var dsps = self.dsps.slice(0);
     self.filterDsps(wrappedRequest, dsps);
     self.auction(wrappedRequest, dsps, self.timeout, function(responses) {
-        var result = self.auctioneer.auction(wrappedRequest, responses, self);
+        var result = self.protocol.auctioneer.auction(wrappedRequest, responses, self);
         var winner = result[1];
         var loser = result[2];
-        callback(null, self.clientResponseHandler.handle(request, result[0], self));
+        callback(null, self.protocol.clientResponseHandler.handle(request, result[0], self));
         //notice each dsp about the result
         winner.forEach(function (response) {
             self.notice_dsp(self.protocol.dspResponseHandler.handleWinResponse(wrappedRequest, response, self));
@@ -209,7 +210,7 @@ Engine.prototype.bid = function(request, callback){
 
 Engine.prototype.filterDsps = function(requestJSON, dsps){
     var self = this;
-    self.filters.forEach(function(filter){
+    self.protocol.filters.forEach(function(filter){
         filter.filter(requestJSON, dsps, self);
     });
 };
