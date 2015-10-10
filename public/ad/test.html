@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+    <script type="text/javascript" src="/ad/ad.js"></script>
+    <script type="text/javascript">
+        //<![CDATA[
+        function write(content){
+            document.write(content + "<br>");
+        };
+
+        write("welcome to ad exchange test ad page");
+        if(client.isMobile()){
+            write("you are using an " + client.getOS() + " mobile device");
+        }else{
+            write("you are using a " + client.getOS() + " computer");
+        }
+        write("your sceen resolution is " + client.getCurrentResolution());
+        //]]>
+    </script>
+</body>
+</html>
