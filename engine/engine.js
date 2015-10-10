@@ -163,6 +163,7 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
             try{
                 responses.push(self.validateJSON(self.protocol.schemas['DspBidResponse'], response));
             }catch(error){
+                winston.log('debuf', "message validation failed, error: " + error);
                 winston.log('error', "dsp %s return invalid response", dsp.id);
             }
         });
