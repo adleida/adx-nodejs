@@ -10,8 +10,17 @@ var url = require('url');
 var uuid = require('node-uuid');
 var fs = require("fs");
 var path = require("path");
+var utils = require("../utils");
 
-
+/**
+ * Date: 10,10, 2015
+ * now the protocol is separated from engine in the bidding process.
+ * Engine is mainly responsible for listening for client request, sending them to dsps, then sending notices to dsps and bid result to client.
+ * Protocol is mainly responsible for validating client request, auctioning and composing messages for client and dsps.
+ * TO-DO: the regular request, response logger function should belong to Engine
+ * @param rootDir
+ * @constructor
+ */
 function Engine(rootDir){
     var self = this;
     self.state = self.ENGINE_STATE.STOPPED;
@@ -27,16 +36,16 @@ Engine.prototype.launch = function(config){
     var self = this;
     if(self.state == self.ENGINE_STATE.STOPPED){
         //initial the engine
-        winston.log('info', "starting ad exchange engine...");
-        self.timeout = config.timeout;
-        if(config.dsps){
+        winston.log('info', "starting engine...");
+        self.timeout = parseInt(config.timeout);
+        if(config.dsps && Array.isArray(config.dsps)){
             self.dsps = config.dsps;
         }else{
             winston.log("warning", "no dsp specified in configuration");
             self.dsps = [];
         }
 
-        winston.log('info', "loading protocols...");
+        winston.log('info', "loading protocol...");
         self.loadProtocol(config.protocol);
         winston.log("info", "protocol loaded");
         self.state = self.ENGINE_STATE.RUNNING;
@@ -52,9 +61,10 @@ Engine.prototype.loadProtocol = function(protocol){
     var protocol = {};
     protocol.schemas = self.loadSchemas(protocolDir);
     protocol.filters = self.loadFilters(protocolDir);
-    protocol.auctioneer = self.loadPropertyAndCheckFunction(path.join(protocolDir, 'auctioneer.js'), ['auction']);
-    protocol.clientRequestHandler = self.loadPropertyAndCheckFunction(path.join(protocolDir, "clientRequestHandler.js"), ['handle']);
-    protocol.clientResponseHandler = self.loadPropertyAndCheckFunction(path.join(protocolDir, 'clientResponseHandler.js'), ['handle']);
+    protocol.auctioneer = self.loadAndCheck(path.join(protocolDir, 'auctioneer.js'), ['auction']);
+    protocol.clientRequestHandler = self.loadAndCheck(path.join(protocolDir, "clientRequestHandler.js"), ['handle']);
+    protocol.clientResponseHandler = self.loadAndCheck(path.join(protocolDir, 'clientResponseHandler.js'), ['handle']);
+    protocol.dspResponseHandler = self.loadAndCheck(path.join(protocolDir, 'dspResponseHandler.js'), []);
     self.protocol = protocol;
 };
 
@@ -90,7 +100,7 @@ Engine.prototype.loadJsDir = function(jsDirPath){
         }
     });
     return classes;
-}
+};
 
 Engine.prototype.loadSchemas = function(protocolDir){
     var self = this;
@@ -112,14 +122,7 @@ Engine.prototype.loadSchemas = function(protocolDir){
  * @constructor
  */
 Engine.prototype.validResponse = function(schema, rawMessage){
-    var self = this;
-    var messageJSON = JSON.parse(rawMessage);
-    var validateResult = validator.validate(messageJSON, schema);
-    if(validateResult.errors.length == 0){
-        return messageJSON;
-    }else{
-        throw new Error("message not valid");
-    }
+    return utils.validateRawString(schema, rawMessage);
 };
 
 Engine.prototype.loadFilters = function(protocolDir){
@@ -135,27 +138,28 @@ Engine.prototype.loadFilters = function(protocolDir){
 
 /**
  * load and initial an object from specified path, and check the function exists in this object
- * @param propertyName
  * @param filePath
  * @param checkFuncs
  * @constructor
  */
-Engine.prototype.loadPropertyAndCheckFunction = function(filePath, checkFuncs){
+Engine.prototype.loadAndCheck = function(filePath, checkFuncs){
     var self = this;
     var loadCls = require(filePath);
     var loadObj = new loadCls();
     checkFuncs.forEach(function(checkFunc){
         if(typeof(loadObj[checkFunc]) != "function"){ throw new Error(loadObj + " doesn't have " + checkFunc + "()")};
-    })
+    });
     return loadObj;
 };
 
 /**
- * send bid request to dsp, if dsp returned full response before timeout, callback would be called to handle response, otherwise the connection would be aborted.
+ * send bid request, if full response returned before timeout,
+ * callback would be called to handle response, otherwise the connection would be aborted.
  * @param request_buffer
  * @param host
  * @param port
  * @param path
+ * @param timeout
  * @param callback
  */
 Engine.prototype.sendBid = function(request_buffer, host, port, path, timeout, callback){
@@ -232,7 +236,7 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
             try{
                 responses.push(self.validResponse(self.protocol.schemas['DspBidResponse'], response));
             }catch(error){
-                winston.log('error', "dsp %s return invalid response", dsp.host);
+                winston.log('error', "dsp %s return invalid response", dsp.id);
             }
         });
     });
@@ -264,38 +268,56 @@ Engine.prototype.bid = function(request, callback){
     var wrappedRequest = self.clientRequestHandler.handle(request, self);
     var self = this;
 
-    self.auction(wrappedRequest, self.dsps, self.timeout, function(responses) {
+    //copy the dsps so the filter could remove unnecessary dsps
+    var dsps = self.dsps.slice(0);
+    self.filterDsps(wrappedRequest, dsps);
+    self.auction(wrappedRequest, dsps, self.timeout, function(responses) {
         var result = self.auctioneer.auction(wrappedRequest, responses, self);
         var winner = result[1];
         var loser = result[2];
         callback(null, self.clientResponseHandler.handle(request, result[0]));
         //notice each dsp about the result
         winner.forEach(function (response) {
-            winston.log('verbose', 'notice dsp %s', response.did);
-            self.notice_dsp(REGULAR_NOTICE.SUCCESS, response);
+            self.notice_dsp(self.protocol.dspResponseHandler.win(wrappedRequest, response, self));
         });
         loser.forEach(function (response) {
             winston.log("verbose", "notice dsp %s", response.did);
-            self.notice_dsp(REGULAR_NOTICE.FAIL, response);
+            self.notice_dsp(self.protocol.dspResponseHandler.fail(wrappedRequest, response, self));
         });
     });
 };
 
+Engine.prototype.filterDsps = function(requestJSON, dsps){
+    var self = this;
+    self.filters.forEach(function(filter){
+        filter.filter(requestJSON, dsps, self);
+    });
+};
+
 /**
- * notice dsp about the bid result
- * @param notice
- * @param nurl
+ * array[0] is the url to notice
+ * array[1] is the json message
+ * @param array
  */
-Engine.prototype.notice_dsp = function(notice, response){
-    var urlobj = url.parse(response.nurl);
-    var notice_str = JSON.stringify(notice);
-    var option = compose_post_option(notice_str, urlobj.hostname, urlobj.port, urlobj.path);
+Engine.prototype.notice_dsp = function(array){
+    var urlobj = url.parse(array[0]);
+    var notice_buffer = new Buffer(JSON.stringify(array[1]), "utf-8");
+    var option = {
+        method : "POST",
+        hostname: urlobj.hostname,
+        port: urlobj.port,
+        path: urlobj.path,
+        headers: {
+            "Content-Type": "application/json",
+            "Content-Length": notice_buffer.length
+        }
+    };
+
     var request = http.request(option);
     request.on('error', function(error){
-        winston.log('info', 'fail to notice url %s, error %s', response.nurl, JSON.stringify(error));
+        winston.log('info', 'fail to notice url %s, error %s', nurl, JSON.stringify(error));
     });
-    notice.id = response.id;
-    request.write(notice_str);
+    request.write(notice_buffer);
     request.end();
 };
 

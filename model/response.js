@@ -2,6 +2,8 @@
  * Created by kliu on 08/06/2015.
  */
 
+//will be deprecated
+
 var RESPONSE = new function(){
     var self = this;
     self.UNRECOGNIZED_REQUEST = {};

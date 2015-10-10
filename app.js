@@ -6,11 +6,11 @@ var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
 var yaml = require('js-yaml');
 var routes = require('./routes/index');
-//var users = require('./routes/users');
 var Engine = require('./engine/engine').Engine;
 var winston = require('winston');
 var fs = require('fs');
-
+var js = require("jsonfile");
+var utils = require("./utils");
 var app = express();
 
 // view engine setup
@@ -72,9 +72,10 @@ app.use(function (err, req, res, next) {
 
 try {
     var config = yaml.safeLoad(fs.readFileSync(rootDir + "/config/app_config.yaml", 'utf8'));
-    if(config.log_level) winston.level = config.log_level;
-    app.set('config', config);
+    var configSchema = js.readFileSync(path.join(rootDir, "config", "config_schema.json"), "utf8");
+    app.set('config', utils.validateJSON(config, configSchema));
     app.set('port', config.port);
+    winston.level = config.log_level;
 } catch (e) {
     winston.log('error', "fail to load configuration, %s", e);
     process.exit(1);
@@ -88,13 +89,16 @@ try{
     process.exit(1);
 }
 
-
-
 /*mongo log*/
 var oplog = app.get('config').mongolog;
 winston.loggers.add('mongo',{
-    MongoDB : oplog
+    console: {
+        level: 'silly',
+        colorize: true,
+        label: 'category one'
+    }
 });
 
 app.set('engine', engine);
+
 module.exports = app;
