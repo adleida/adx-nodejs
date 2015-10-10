@@ -4,8 +4,7 @@
 
 function Response(){
 
-};
-
+}
 Response.prototype.successResponseJSON = function(request, result, engine){
 
 };

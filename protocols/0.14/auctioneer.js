@@ -4,10 +4,9 @@
 
 function Auctioneer(){
 
-};
-
+}
 Auctioneer.prototype.auction = function(request, responses, engine){
-    var self = this;
+
     var priceFloor = request.adunit.floor;
     var max = request.adunit.param.count;
     var admsCandidate = [];

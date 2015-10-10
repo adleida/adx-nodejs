@@ -3,8 +3,7 @@
  */
 
 function AuctioneerBase(){
-};
-
+}
 /**
  * should return the acution type that the auctioneer could handle
  */

@@ -8,8 +8,7 @@ var winston = require("winston");
 function MongoAdapter(){
     this.mongoClient = mongodb.MongoClient;
     this.db = null;
-};
-
+}
 MongoAdapter.prototype.connectAsync = function(url, username, password){
     var self = this;
     var result = undefined;

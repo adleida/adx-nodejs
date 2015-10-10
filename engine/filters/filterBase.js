@@ -8,8 +8,7 @@
  */
 function FilterBase(){
     this.name = "baseFilter";
-};
-
+}
 /**
  * load message will be print in the log 'info'
  */

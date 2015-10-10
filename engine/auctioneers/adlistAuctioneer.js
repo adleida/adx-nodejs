@@ -6,8 +6,7 @@ var AuctioneerBase = require("./auctioneerBase");
 
 function AdlistAuctioneer(){
 
-};
-
+}
 util.inherits(AdlistAuctioneer, AuctioneerBase);
 
 AdlistAuctioneer.prototype.auctionType = function(){
@@ -15,7 +14,7 @@ AdlistAuctioneer.prototype.auctionType = function(){
 };
 
 AdlistAuctioneer.prototype.handle = function(request, responses, engine){
-    var self = this;
+
     var priceFloor = request.adunit.floor;
     var max = request.adunit.param.count;
     var admsCandidate = [];

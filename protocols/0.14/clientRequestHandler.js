@@ -11,8 +11,7 @@ var uuid = require('node-uuid');
 
 function ClientRequestHandler(){
 
-};
-
+}
 /**
  * get the parsed request json, and return the request that the exchange would send it to dsps
  * @param requestJson
