@@ -3,72 +3,40 @@
   "type": "object",
   "required": [
     "id",
-    "adm",
-    "did",
-    "nurl",
-    "is_test"
+    "price"
   ],
   "properties": {
     "id": {
       "type": "string"
     },
-    "adm": {
-      "type": "array",
-      "item": {
-        "type": "object",
-        "required": [
-          "id",
-          "data",
-          "price"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object",
-            "properties": {
-              "img": {
-                "type": "string"
-              },
-              "text": {
-                "type": "string"
-              },
-              "app_url": {
-                "type": "string"
-              }
-            }
-          },
-          "price": {
-            "type": "number"
-          },
-          "click_through_url": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "tracking_url": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
+    "data": {
+      "type": "object",
+      "properties": {
+        "img": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "app_url": {
+          "type": "string"
         }
       }
     },
-    "did": {
-      "type": "string"
+    "price": {
+      "type": "number"
     },
-    "nurl": {
-      "type": "string"
+    "click_through_url": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
-    "is_test": {
-      "type": "integer",
-      "enum": [
-        0,
-        1
-      ]
+    "tracking_url": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   }
 }
