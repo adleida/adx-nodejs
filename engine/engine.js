@@ -36,8 +36,11 @@ Engine.prototype.launch = function(config){
         //initial the engine
         winston.log('info', "starting engine...");
         self.timeout = parseInt(config.timeout);
+        winston.log('verbose', 'engine timeout is ' + self.timeout);
+
         if(config.dsps && Array.isArray(config.dsps)){
             self.dsps = config.dsps;
+            winston.log('verbose', "engine starting dsps are " + self.dsps);
         }else{
             winston.log("warning", "no dsp specified in configuration");
             self.dsps = [];
@@ -47,6 +50,8 @@ Engine.prototype.launch = function(config){
         self.loadProtocol(config.protocol);
         winston.log("info", "protocol loaded");
         self.state = self.ENGINE_STATE.RUNNING;
+        winston.log("info","engine start running...");
+
     }else if(self.state == self.ENGINE_STATE.RUNNING){
         winston.log('error', "ad exchange engine is already running");
         throw new Error("ad exchange engine already launched");
@@ -84,11 +89,15 @@ Engine.prototype.validateJSON = function(schema, json){
 };
 
 Engine.prototype.loadFilters = function(protocolDir){
-    var jsFiles = fs.readdirSync(path.join(protocolDir, "filters"));
     var filters = [];
-    jsFiles.forEach(function(jsFile){
-        filters.push(utils.loadAndCheck(path.join(protocolDir, "filters", jsFile), ['filter']));
-    });
+    try{
+        var jsFiles = fs.readdirSync(path.join(protocolDir, "filters"));
+        jsFiles.forEach(function(jsFile){
+            filters.push(utils.loadAndCheck(path.join(protocolDir, "filters", jsFile), ['filter']));
+        });
+    }catch(error){
+        winston.log("error", "fail to load filters, error " + error);
+    }
     return filters;
 };
 
@@ -137,11 +146,10 @@ Engine.prototype.sendBid = function(request_buffer, host, port, path, timeout, c
     });
 
     req.write(request_buffer);
-    req.end(function(){
-        setTimeout(function(){
-            req.abort();
-        }, timeout);
-    });
+    req.end();
+    setTimeout(function(){
+        req.abort();
+    }, timeout);
 };
 
 /**
@@ -157,12 +165,15 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
     var responses = [];
     var request_buffer = new Buffer(JSON.stringify(request), "utf-8");
 
-    winston.log('info', 'start new auction, bid request id is  %s...', request.id);
+    winston.log('verbose', 'start new auction, bid request id is  %s...', request.id);
     dsps.forEach(function(dsp){
         self.sendBid(request_buffer, dsp.bid_host, dsp.bid_port, dsp.bid_path, timeout, function(response){
+            winston.log("debug", "response from dsp : " + response);
             try{
-                responses.push(self.validateJSON(self.protocol.schemas['DspBidResponse'], response));
+                responses.push(self.validateJSON(self.protocol.schemas['dspBidResponseSchema'], JSON.parse(response)));
             }catch(error){
+
+                winston.log('verbose', "message validation failed, error: " + error);
                 winston.log('error', "dsp %s return invalid response", dsp.id);
             }
         });
@@ -182,9 +193,11 @@ Engine.prototype.auction = function(request, dsps, timeout, callback){
 Engine.prototype.bid = function(request, callback){
     var self = this;
     var requestJson = null;
+    winston.log("debug", "receive request: " + request);
     try{
         requestJson = self.validateJSON(self.protocol.schemas['clientRequestSchema'], request);
     }catch(error){
+        winston.log("verbose", "invalid request from client");
         callback(error, self.protocol.clientResponseHandler.handleInvalidBidRequest(request, error, self));
         return;
     }
@@ -200,9 +213,11 @@ Engine.prototype.bid = function(request, callback){
         callback(null, self.protocol.clientResponseHandler.handle(request, result[0], self));
         //notice each dsp about the result
         winner.forEach(function (response) {
+            winston.log('verbose', "send response to win dsp");
             self.notice_dsp(self.protocol.dspResponseHandler.handleWinResponse(wrappedRequest, response, self));
         });
         loser.forEach(function (response) {
+            winston.log("verbose", "send response to fail dsp");
             self.notice_dsp(self.protocol.dspResponseHandler.handleFailResponse(wrappedRequest, response, self));
         });
     });
@@ -220,9 +235,9 @@ Engine.prototype.filterDsps = function(requestJSON, dsps){
  * array[1] is the json message
  * @param array
  */
-Engine.prototype.notice_dsp = function(array){
-    var urlobj = url.parse(array[0]);
-    var notice_buffer = new Buffer(JSON.stringify(array[1]), "utf-8");
+Engine.prototype.notice_dsp = function(param){
+    var urlobj = url.parse(param[0]);
+    var notice_buffer = new Buffer(JSON.stringify(param[1]), "utf-8");
     var option = {
         method : "POST",
         hostname: urlobj.hostname,
@@ -236,9 +251,10 @@ Engine.prototype.notice_dsp = function(array){
 
     var request = http.request(option);
     request.on('error', function(error){
-        winston.log('info', 'fail to notice url %s, error %s', array[0], JSON.stringify(error));
+        winston.log('info', 'fail to notice url %s, error %s', param[0], JSON.stringify(error));
     });
     request.write(notice_buffer);
+    winston.log("verbose", "notice dsp " + param[0]);
     request.end();
 };
 
