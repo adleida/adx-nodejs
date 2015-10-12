@@ -100,6 +100,7 @@ var client = new ClientJS();
  */
 
 
+/*
 var arg = "{\"adunit\": {        \"type\": 1,        \"floor\": 1.6,        \"cid\": \"1101201\",        \"param\": {            \"count\": 3        }     },    \"device\": {        \"os\": \"ANDROID\",        \"os_version\": \"4.4.4\",        \"resolution_w\": 720,        \"resolution_h\": 1080,        \"network_id\": 70120,        \"device_type\": 2,        \"device_id\": \"6C0590AFF652982CEB7B3F7D8214C508\",        \"device_id_enc\": 1,        \"delected_language\": \"zh_CN\",        \"brand\": \"xiaomi\",        \"model\": \"m2\"    },    \"geo\": {        \"country\": \"asd\",        \"city\": \"asdf\",        \"latitude\": 102.153585,        \"longtitude\": 10.5544    },    \"user_id\": \"bangbang2015001\",    \"is_test\": 1,    \"cur\": \"CNY\",    \"sdk\": \"bangbang\"}"
 
 jsonArg = JSON.parse(arg);
@@ -131,3 +132,4 @@ function display(jsonResponse){
     document.write(htmlSuffix);
 
 }
+*/

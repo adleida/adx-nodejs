@@ -8,17 +8,38 @@
     <script type="text/javascript" src="/ad/ad.js"></script>
     <script type="text/javascript">
         //<![CDATA[
-        function write(content){
-            document.write(content + "<br>");
+        function write(title, content){
+            document.write("<h4>"+title + "</h4><br>" + content + "<br>");
         };
 
-        write("welcome to ad exchange test ad page");
-        if(client.isMobile()){
-            write("you are using an " + client.getOS() + " mobile device");
-        }else{
-            write("you are using a " + client.getOS() + " computer");
-        }
-        write("your sceen resolution is " + client.getCurrentResolution());
+
+        function testProp(prop){
+            document.write("<h4>"+ prop + "</h4><br>" + client[prop]() + "<br>");
+        };
+
+        function test(props){
+            props.forEach(function(prop){
+                testProp(prop);
+            })
+        };
+
+        test([
+            "getFingerprint",
+            "getBrowser",
+            "getOS",
+            "getOSVersion",
+            "getDevice",
+            "getDeviceType",
+            "isMobile",
+            "isMobileMajor",
+            "isMobileIOS",
+            "isIphone",
+            "isIpad",
+            "isIpod",
+            "getCurrentResolution",
+            "getDeviceXDPI"
+        ]);
+
         //]]>
     </script>
 </body>
