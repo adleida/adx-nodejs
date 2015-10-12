@@ -62,7 +62,7 @@ Engine.prototype.loadProtocol = function(protocol){
     ret.filters = self.loadFilters(protocolDir);
     ret.auctioneer = utils.loadAndCheck(path.join(protocolDir, 'auctioneer.js'), ['auction']);
     ret.clientRequestHandler = utils.loadAndCheck(path.join(protocolDir, "clientRequestHandler.js"), ['handle']);
-    ret.clientResponseHandler = utils.loadAndCheck(path.join(protocolDir, 'clientResponseHandler.js'), ['handle']);
+    ret.clientResponseHandler = utils.loadAndCheck(path.join(protocolDir, 'clientResponseHandler.js'), ['handle', 'handleInvalidBidRequest']);
     ret.dspResponseHandler = utils.loadAndCheck(path.join(protocolDir, 'dspResponseHandler.js'), []);
     self.protocol = ret;
 };
