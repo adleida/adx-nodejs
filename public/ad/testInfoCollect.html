@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+    <script type="text/javascript" src="/ad/uuloopad.js?country=China&test=1"></script>
+    <script type="text/javascript">
+        //<![CDATA[
+        function write(title, content){
+            document.write("<h4>"+title + "</h4><br>" + content + "<br>");
+        };
+
+
+        function testProp(prop){
+            document.write("<h4>"+ prop + "</h4><br>" + client[prop]() + "<br>");
+        };
+
+        function test(props){
+            props.forEach(function(prop){
+                testProp(prop);
+            })
+        };
+
+        //]]>
+    </script>
+</body>
+</html>

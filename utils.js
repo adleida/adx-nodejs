@@ -31,7 +31,7 @@ utils.loadAndCheck = function(filePath, checkFuncs){
     var loadObj = new loadCls();
     checkFuncs.forEach(function(checkFunc){
         if (typeof(loadObj[checkFunc]) != "function") {
-            throw new Error(loadObj + " doesn't have " + checkFunc + "()")
+            throw new Error(filePath + " doesn't have " + checkFunc + "()")
         }
     });
     return loadObj;
