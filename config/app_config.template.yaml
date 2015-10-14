@@ -1,5 +1,10 @@
 engine:
     timeout: 100
+    database:
+        type: mongo
+        url: s
+        username: waht
+        password: waht
     dsps:
         - bid_host : 123.57.70.242
           bid_port : 6060
