@@ -31,3 +31,4 @@ once the exchange started, it will run on configured port. client may send bid r
 
 当exchange启动后，它将在配置端口运行。发起竞价方可以将bid request发向 **http://ip:port/clk**，exchange将会向所有注册dsp发出竞拍，选出最后获胜者返回发起竞价方最后广告方案，同时通知DSP竞价结果。
 
+Trigger Builder
